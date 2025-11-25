@@ -1,0 +1,31 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+build/
+*.g.dart
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+*.swp
+
+# Pub
+pubspec.lock
+.pub-cache/
+.pub/
+
+# Coverage
+coverage/
+
+# Generated files
+*.mocks.dart
+
+# Database files (example)
+*.db
+*.db-shm
+*.db-wal
+

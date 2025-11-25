@@ -1,0 +1,16 @@
+analyzer:
+  language:
+    strict-raw-types: true
+    strict-inference: true
+    strict-casts: true
+  exclude:
+    - build/**
+    - ".dart_tool/**"
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    always_use_package_imports: true
+    prefer_single_quotes: true
+    cancel_subscriptions: true
+    close_sinks: true

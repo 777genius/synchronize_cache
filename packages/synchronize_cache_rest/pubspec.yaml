@@ -1,0 +1,20 @@
+name: synchronize_cache_rest
+description: REST transport adapter for synchronize_cache.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  synchronize_cache:
+    path: ../synchronize_cache
+  http: ^1.4.0
+
+dev_dependencies:
+  test: ^1.25.15
+  drift: ^2.26.0
+  drift_dev: ^2.26.0
+  build_runner: ^2.4.15
+

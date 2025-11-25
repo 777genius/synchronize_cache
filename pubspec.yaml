@@ -1,0 +1,10 @@
+name: synchronize_cache_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.7.0
+
+workspace:
+  - packages/synchronize_cache
+  - packages/synchronize_cache_rest
+  - example
