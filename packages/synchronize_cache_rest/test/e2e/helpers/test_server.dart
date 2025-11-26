@@ -129,14 +129,11 @@ class TestServer {
   }
 
   /// Получить данные из хранилища.
-  Map<String, Object?>? get(String kind, String id) {
-    return _storage[kind]?[id];
-  }
+  Map<String, Object?>? get(String kind, String id) => _storage[kind]?[id];
 
   /// Получить все данные по kind.
-  List<Map<String, Object?>> getAll(String kind) {
-    return _storage[kind]?.values.toList() ?? [];
-  }
+  List<Map<String, Object?>> getAll(String kind) =>
+      _storage[kind]?.values.toList() ?? [];
 
   /// Обновить данные напрямую (для симуляции конкурентных изменений).
   void update(String kind, String id, Map<String, Object?> data) {
@@ -370,8 +367,7 @@ class TestServer {
         'id': id,
         'created_at': now.toIso8601String(),
         'updated_at': now.toIso8601String(),
-      };
-      data.remove('_baseUpdatedAt');
+      }..remove('_baseUpdatedAt');
 
       _storage[kind]![id] = data;
       _versions[kind]![id] = 1;
@@ -490,17 +486,16 @@ class TestServer {
     request.response
       ..statusCode = status
       ..headers.contentType = ContentType.json
-      ..write(jsonEncode(data));
-    request.response.close();
+      ..write(jsonEncode(data))
+      ..close();
   }
 
   void _sendError(HttpRequest request, int status, String message) {
     _sendJson(request, status, {'error': message});
   }
 
-  String _generateId() {
-    return DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-  }
+  String _generateId() =>
+      DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 }
 
 /// Записанный запрос для проверки в тестах.

@@ -6,11 +6,11 @@ import 'package:drift/native.dart';
 import 'package:synchronize_cache/synchronize_cache.dart';
 import 'package:synchronize_cache_rest/synchronize_cache_rest.dart';
 import 'package:test/test.dart' hide isNotNull, isNull;
+import 'package:test/test.dart' as test_matchers show isNotNull;
 
 import 'helpers/test_server.dart';
-import 'tables/local_sync_tables.dart';
 
-part 'conflict_e2e_test.g.dart';
+import 'conflict_e2e_test.drift.dart';
 
 class TestEntity {
   TestEntity({
@@ -92,8 +92,11 @@ class TestEntities extends Table with SyncColumns {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [TestEntities, LocalSyncOutbox, LocalSyncCursors])
-class TestDatabase extends _$TestDatabase with SyncDatabaseMixin {
+@DriftDatabase(
+  include: {'package:synchronize_cache/src/sync_tables.drift'},
+  tables: [TestEntities],
+)
+class TestDatabase extends $TestDatabase with SyncDatabaseMixin {
   TestDatabase() : super(NativeDatabase.memory());
 
   @override
@@ -104,12 +107,20 @@ void main() {
   late TestServer server;
   late TestDatabase db;
   late RestTransport transport;
+  var dbClosed = false;
+
+  Future<void> closeDb() async {
+    if (dbClosed) return;
+    dbClosed = true;
+    await db.close();
+  }
 
   setUp(() async {
     server = TestServer();
     await server.start();
 
     db = TestDatabase();
+    dbClosed = false;
 
     transport = RestTransport(
       base: server.baseUrl,
@@ -121,30 +132,29 @@ void main() {
   });
 
   tearDown(() async {
-    await db.close();
+    await closeDb();
     await server.stop();
   });
 
   SyncEngine createEngine({
     SyncConfig? config,
     Map<String, TableConflictConfig>? tableConflictConfigs,
-  }) {
-    return SyncEngine(
-      db: db,
-      transport: transport,
-      tables: [
-        SyncableTable<TestEntity>(
-          kind: 'test_entity',
-          table: db.testEntities,
-          fromJson: TestEntity.fromJson,
-          toJson: (item) => item.toJson(),
-          toInsertable: (item) => item.toInsertable(),
-        ),
-      ],
-      config: config ?? const SyncConfig(),
-      tableConflictConfigs: tableConflictConfigs ?? {},
-    );
-  }
+  }) =>
+      SyncEngine(
+        db: db,
+        transport: transport,
+        tables: [
+          SyncableTable<TestEntity>(
+            kind: 'test_entity',
+            table: db.testEntities,
+            fromJson: TestEntity.fromJson,
+            toJson: (item) => item.toJson(),
+            toInsertable: (item) => item.toInsertable(),
+          ),
+        ],
+        config: config ?? const SyncConfig(),
+        tableConflictConfigs: tableConflictConfigs ?? {},
+      );
 
   group('ConflictStrategy.serverWins', () {
     test('accepts server data on conflict', () async {
@@ -530,11 +540,9 @@ void main() {
       final engine = createEngine(
         config: SyncConfig(
           conflictStrategy: ConflictStrategy.merge,
-          mergeFunction: (local, server) {
-            return {
-              ...server,
-              'name': '${local['name']} + ${server['name']}',
-            };
+          mergeFunction: (local, server) => {
+            ...server,
+            'name': '${local['name']} + ${server['name']}',
           },
         ),
       );
@@ -824,13 +832,11 @@ void main() {
       final engine = createEngine(
         config: SyncConfig(
           conflictStrategy: ConflictStrategy.manual,
-          conflictResolver: (conflict) async {
-            return AcceptMerged({
-              ...conflict.serverData,
-              'name': 'Manually Merged',
-              'mood': 100,
-            });
-          },
+          conflictResolver: (conflict) async => AcceptMerged({
+            ...conflict.serverData,
+            'name': 'Manually Merged',
+            'mood': 100,
+          }),
         ),
       );
 
@@ -998,8 +1004,9 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      server.update('test_entity', 'entity-1', {'name': 'Server 1'});
-      server.update('test_entity', 'entity-2', {'name': 'Server 2'});
+      server
+        ..update('test_entity', 'entity-1', {'name': 'Server 1'})
+        ..update('test_entity', 'entity-2', {'name': 'Server 2'});
 
       final engine = createEngine(
         config: const SyncConfig(
@@ -1580,12 +1587,12 @@ void main() {
 
   group('No conflict scenarios', () {
     test('successful push without conflict', () async {
-      server.conflictCheckEnabled = false;
-
-      server.seed('test_entity', {
-        'id': 'entity-1',
-        'name': 'Original',
-      });
+      server
+        ..conflictCheckEnabled = false
+        ..seed('test_entity', {
+          'id': 'entity-1',
+          'name': 'Original',
+        });
 
       final engine = createEngine();
 
@@ -1652,7 +1659,7 @@ void main() {
       });
 
       final engine = createEngine(
-        config: SyncConfig(
+        config: const SyncConfig(
           conflictStrategy: ConflictStrategy.merge,
           mergeFunction: ConflictUtils.deepMerge,
         ),
@@ -1868,6 +1875,7 @@ void main() {
 
       await engine1.sync();
       engine1.dispose();
+      await closeDb();
 
       final db2 = TestDatabase();
       addTearDown(() => db2.close());
@@ -1944,13 +1952,13 @@ void main() {
     });
 
     test('server errors prevent pull from completing', () async {
-      server.seed('test_entity', {
-        'id': 'entity-1',
-        'name': 'Server Data',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
-
-      server.failNextRequests(10, statusCode: 503);
+      server
+        ..seed('test_entity', {
+          'id': 'entity-1',
+          'name': 'Server Data',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        ..failNextRequests(10, statusCode: 503);
 
       final engine = createEngine(
         config: const SyncConfig(
@@ -1966,7 +1974,7 @@ void main() {
         caughtError = e;
       }
 
-      expect(caughtError, isNot(isNull));
+      expect(caughtError, test_matchers.isNotNull);
 
       final items = await db.select(db.testEntities).get();
       expect(items, isEmpty);
@@ -2048,7 +2056,7 @@ void main() {
         caughtError = e;
       }
 
-      expect(caughtError, isNot(isNull));
+      expect(caughtError, test_matchers.isNotNull);
 
       server.returnInvalidJson(false);
       engine.dispose();
@@ -2091,7 +2099,7 @@ void main() {
         caughtError = e;
       }
 
-      expect(caughtError, isNot(isNull));
+      expect(caughtError, test_matchers.isNotNull);
 
       server.returnIncompleteConflict(false);
       engine.dispose();
@@ -2169,7 +2177,7 @@ void main() {
         caughtError = e;
       }
 
-      expect(caughtError, isNot(isNull));
+      expect(caughtError, test_matchers.isNotNull);
 
       engine.dispose();
     });
