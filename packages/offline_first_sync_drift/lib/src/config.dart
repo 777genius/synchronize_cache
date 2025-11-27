@@ -93,25 +93,24 @@ class SyncConfig {
     int? maxConflictRetries,
     Duration? conflictRetryDelay,
     bool? skipConflictingOps,
-  }) =>
-      SyncConfig(
-        pageSize: pageSize ?? this.pageSize,
-        backoffMin: backoffMin ?? this.backoffMin,
-        backoffMax: backoffMax ?? this.backoffMax,
-        backoffMultiplier: backoffMultiplier ?? this.backoffMultiplier,
-        maxPushRetries: maxPushRetries ?? this.maxPushRetries,
-        fullResyncInterval: fullResyncInterval ?? this.fullResyncInterval,
-        pullOnStartup: pullOnStartup ?? this.pullOnStartup,
-        pushImmediately: pushImmediately ?? this.pushImmediately,
-        reconcileInterval: reconcileInterval ?? this.reconcileInterval,
-        lazyReconcileOnMiss: lazyReconcileOnMiss ?? this.lazyReconcileOnMiss,
-        conflictStrategy: conflictStrategy ?? this.conflictStrategy,
-        conflictResolver: conflictResolver ?? this.conflictResolver,
-        mergeFunction: mergeFunction ?? this.mergeFunction,
-        maxConflictRetries: maxConflictRetries ?? this.maxConflictRetries,
-        conflictRetryDelay: conflictRetryDelay ?? this.conflictRetryDelay,
-        skipConflictingOps: skipConflictingOps ?? this.skipConflictingOps,
-      );
+  }) => SyncConfig(
+    pageSize: pageSize ?? this.pageSize,
+    backoffMin: backoffMin ?? this.backoffMin,
+    backoffMax: backoffMax ?? this.backoffMax,
+    backoffMultiplier: backoffMultiplier ?? this.backoffMultiplier,
+    maxPushRetries: maxPushRetries ?? this.maxPushRetries,
+    fullResyncInterval: fullResyncInterval ?? this.fullResyncInterval,
+    pullOnStartup: pullOnStartup ?? this.pullOnStartup,
+    pushImmediately: pushImmediately ?? this.pushImmediately,
+    reconcileInterval: reconcileInterval ?? this.reconcileInterval,
+    lazyReconcileOnMiss: lazyReconcileOnMiss ?? this.lazyReconcileOnMiss,
+    conflictStrategy: conflictStrategy ?? this.conflictStrategy,
+    conflictResolver: conflictResolver ?? this.conflictResolver,
+    mergeFunction: mergeFunction ?? this.mergeFunction,
+    maxConflictRetries: maxConflictRetries ?? this.maxConflictRetries,
+    conflictRetryDelay: conflictRetryDelay ?? this.conflictRetryDelay,
+    skipConflictingOps: skipConflictingOps ?? this.skipConflictingOps,
+  );
 }
 
 /// Конфигурация конфликтов для конкретной таблицы.

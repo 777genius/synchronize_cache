@@ -1,15 +1,24 @@
 name: offline_first_sync_drift_rest
-description: REST transport adapter for offline_first_sync_drift.
+description: >
+  REST transport adapter for offline_first_sync_drift.
+  Implements TransportAdapter with retry, parallel push, and conflict detection.
 version: 0.1.0
-publish_to: none
+repository: https://github.com/cherrypick-agency/offline_first_sync_drift
+issue_tracker: https://github.com/cherrypick-agency/offline_first_sync_drift/issues
 resolution: workspace
+
+topics:
+  - drift
+  - offline-first
+  - rest
+  - http
+  - sync
 
 environment:
   sdk: ^3.7.0
 
 dependencies:
-  offline_first_sync_drift:
-    path: ../offline_first_sync_drift
+  offline_first_sync_drift: ^0.1.0
   http: ^1.4.0
 
 dev_dependencies:

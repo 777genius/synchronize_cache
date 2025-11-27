@@ -24,4 +24,3 @@ mixin SyncColumns on Table implements SynchronizableTable {
   @override
   DateTimeColumn get deletedAtLocal => dateTime().nullable()();
 }
-

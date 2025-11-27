@@ -8,4 +8,3 @@ class Cursor {
   /// ID последнего элемента для разрешения коллизий.
   final String lastId;
 }
-

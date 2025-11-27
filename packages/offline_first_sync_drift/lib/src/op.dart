@@ -56,16 +56,15 @@ class UpsertOp extends Op {
     Map<String, Object?>? payloadJson,
     DateTime? baseUpdatedAt,
     Set<String>? changedFields,
-  }) =>
-      UpsertOp(
-        opId: opId ?? this.opId,
-        kind: kind ?? this.kind,
-        id: id ?? this.id,
-        localTimestamp: localTimestamp ?? this.localTimestamp,
-        payloadJson: payloadJson ?? this.payloadJson,
-        baseUpdatedAt: baseUpdatedAt ?? this.baseUpdatedAt,
-        changedFields: changedFields ?? this.changedFields,
-      );
+  }) => UpsertOp(
+    opId: opId ?? this.opId,
+    kind: kind ?? this.kind,
+    id: id ?? this.id,
+    localTimestamp: localTimestamp ?? this.localTimestamp,
+    payloadJson: payloadJson ?? this.payloadJson,
+    baseUpdatedAt: baseUpdatedAt ?? this.baseUpdatedAt,
+    changedFields: changedFields ?? this.changedFields,
+  );
 }
 
 /// Операция удаления сущности.

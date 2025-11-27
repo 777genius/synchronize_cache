@@ -21,11 +21,11 @@ class SyncEngine<DB extends GeneratedDatabase> {
     required List<SyncableTable<dynamic>> tables,
     SyncConfig config = const SyncConfig(),
     Map<String, TableConflictConfig>? tableConflictConfigs,
-  })  : _db = db,
-        _transport = transport,
-        _tables = {for (final t in tables) t.kind: t},
-        _config = config,
-        _tableConflictConfigs = tableConflictConfigs ?? {} {
+  }) : _db = db,
+       _transport = transport,
+       _tables = {for (final t in tables) t.kind: t},
+       _config = config,
+       _tableConflictConfigs = tableConflictConfigs ?? {} {
     if (db is! SyncDatabaseMixin) {
       throw ArgumentError(
         'Database must implement SyncDatabaseMixin. '
@@ -115,7 +115,8 @@ class SyncEngine<DB extends GeneratedDatabase> {
 
     try {
       final lastFullResync = await _cursorService.getLastFullResync();
-      final needsFullResync = lastFullResync == null ||
+      final needsFullResync =
+          lastFullResync == null ||
           started.difference(lastFullResync) >= _config.fullResyncInterval;
 
       if (needsFullResync) {
@@ -139,11 +140,13 @@ class SyncEngine<DB extends GeneratedDatabase> {
       final pulled = await _pullService.pullKinds(targetKinds);
       stats = stats.copyWith(pulled: pulled);
 
-      _events.add(SyncCompleted(
-        DateTime.now().difference(started),
-        DateTime.now(),
-        stats: stats,
-      ));
+      _events.add(
+        SyncCompleted(
+          DateTime.now().difference(started),
+          DateTime.now(),
+          stats: stats,
+        ),
+      );
 
       return stats;
     } on SyncException catch (e, st) {
@@ -206,7 +209,8 @@ class SyncEngine<DB extends GeneratedDatabase> {
       await _cursorService.resetAll(_tables.keys.toSet());
 
       if (clearData) {
-        final tableNames = _tables.values.map((t) => t.table.actualTableName).toList();
+        final tableNames =
+            _tables.values.map((t) => t.table.actualTableName).toList();
         await _syncDb.clearSyncableTables(tableNames);
       }
 
@@ -216,11 +220,13 @@ class SyncEngine<DB extends GeneratedDatabase> {
 
       await _cursorService.setLastFullResync(DateTime.now());
 
-      _events.add(SyncCompleted(
-        DateTime.now().difference(started),
-        DateTime.now(),
-        stats: stats,
-      ));
+      _events.add(
+        SyncCompleted(
+          DateTime.now().difference(started),
+          DateTime.now(),
+          stats: stats,
+        ),
+      );
 
       return stats;
     } on SyncException catch (e, st) {

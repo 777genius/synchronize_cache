@@ -50,10 +50,7 @@ class AcceptMerged extends ConflictResolution {
 
 /// Информация о слиянии данных.
 class MergeInfo {
-  const MergeInfo({
-    required this.localFields,
-    required this.serverFields,
-  });
+  const MergeInfo({required this.localFields, required this.serverFields});
 
   /// Поля, взятые из локальных данных.
   final Set<String> localFields;
@@ -114,19 +111,22 @@ class Conflict {
   final Set<String>? changedFields;
 
   @override
-  String toString() => 'Conflict(kind: $kind, id: $entityId, '
+  String toString() =>
+      'Conflict(kind: $kind, id: $entityId, '
       'local: ${localTimestamp.toIso8601String()}, '
       'server: ${serverTimestamp.toIso8601String()})';
 }
 
 /// Callback для ручного разрешения конфликта.
-typedef ConflictResolver = Future<ConflictResolution> Function(Conflict conflict);
+typedef ConflictResolver =
+    Future<ConflictResolution> Function(Conflict conflict);
 
 /// Callback для слияния данных.
-typedef MergeFunction = Map<String, Object?> Function(
-  Map<String, Object?> local,
-  Map<String, Object?> server,
-);
+typedef MergeFunction =
+    Map<String, Object?> Function(
+      Map<String, Object?> local,
+      Map<String, Object?> server,
+    );
 
 /// Результат push операции.
 sealed class PushResult {
@@ -317,7 +317,9 @@ abstract final class ConflictUtils {
     for (final item in local) {
       if (item is Map && item.containsKey(SyncFields.id)) {
         final itemId = item[SyncFields.id];
-        final exists = server.any((s) => s is Map && s[SyncFields.id] == itemId);
+        final exists = server.any(
+          (s) => s is Map && s[SyncFields.id] == itemId,
+        );
         if (!exists) {
           result.add(item);
         }

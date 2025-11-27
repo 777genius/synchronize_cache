@@ -10,10 +10,7 @@ import 'package:offline_first_sync_drift/src/transport_adapter.dart';
 
 /// Результат разрешения конфликта.
 class ConflictResolutionResult {
-  const ConflictResolutionResult({
-    required this.resolved,
-    this.resultData,
-  });
+  const ConflictResolutionResult({required this.resolved, this.resultData});
 
   /// Конфликт разрешён.
   final bool resolved;
@@ -31,12 +28,12 @@ class ConflictService<DB extends GeneratedDatabase> {
     required SyncConfig config,
     required Map<String, TableConflictConfig> tableConflictConfigs,
     required StreamController<SyncEvent> events,
-  })  : _db = db,
-        _transport = transport,
-        _tables = tables,
-        _config = config,
-        _tableConflictConfigs = tableConflictConfigs,
-        _events = events;
+  }) : _db = db,
+       _transport = transport,
+       _tables = tables,
+       _config = config,
+       _tableConflictConfigs = tableConflictConfigs,
+       _events = events;
 
   final DB _db;
   final TransportAdapter _transport;
@@ -70,7 +67,11 @@ class ConflictService<DB extends GeneratedDatabase> {
 
     _events.add(ConflictDetectedEvent(conflict: conflict, strategy: strategy));
 
-    final resolution = await _determineResolution(conflict, strategy, tableConfig);
+    final resolution = await _determineResolution(
+      conflict,
+      strategy,
+      tableConfig,
+    );
 
     return _applyResolution(op, conflict, resolution);
   }
@@ -94,7 +95,8 @@ class ConflictService<DB extends GeneratedDatabase> {
         return const AcceptServer();
 
       case ConflictStrategy.merge:
-        final mergeFunc = tableConfig?.mergeFunction ??
+        final mergeFunc =
+            tableConfig?.mergeFunction ??
             _config.mergeFunction ??
             ConflictUtils.defaultMerge;
         final merged = mergeFunc(conflict.localData, conflict.serverData);
@@ -103,10 +105,12 @@ class ConflictService<DB extends GeneratedDatabase> {
       case ConflictStrategy.manual:
         final resolver = tableConfig?.resolver ?? _config.conflictResolver;
         if (resolver == null) {
-          _events.add(ConflictUnresolvedEvent(
-            conflict: conflict,
-            reason: 'No conflict resolver provided for manual strategy',
-          ));
+          _events.add(
+            ConflictUnresolvedEvent(
+              conflict: conflict,
+              reason: 'No conflict resolver provided for manual strategy',
+            ),
+          );
           return const DeferResolution();
         }
         return resolver(conflict);
@@ -118,13 +122,15 @@ class ConflictService<DB extends GeneratedDatabase> {
           changedFields: conflict.changedFields,
         );
 
-        _events.add(DataMergedEvent(
-          kind: conflict.kind,
-          entityId: conflict.entityId,
-          localFields: mergeResult.localFields,
-          serverFields: mergeResult.serverFields,
-          mergedData: mergeResult.data,
-        ));
+        _events.add(
+          DataMergedEvent(
+            kind: conflict.kind,
+            entityId: conflict.entityId,
+            localFields: mergeResult.localFields,
+            serverFields: mergeResult.serverFields,
+            mergedData: mergeResult.data,
+          ),
+        );
 
         return AcceptMerged(
           mergeResult.data,
@@ -144,11 +150,13 @@ class ConflictService<DB extends GeneratedDatabase> {
     switch (resolution) {
       case AcceptServer():
         await _applyServerData(conflict);
-        _events.add(ConflictResolvedEvent(
-          conflict: conflict,
-          resolution: resolution,
-          resultData: conflict.serverData,
-        ));
+        _events.add(
+          ConflictResolvedEvent(
+            conflict: conflict,
+            resolution: resolution,
+            resultData: conflict.serverData,
+          ),
+        );
         return ConflictResolutionResult(
           resolved: true,
           resultData: conflict.serverData,
@@ -157,11 +165,13 @@ class ConflictService<DB extends GeneratedDatabase> {
       case AcceptClient():
         final success = await _forcePushOp(op);
         if (success) {
-          _events.add(ConflictResolvedEvent(
-            conflict: conflict,
-            resolution: resolution,
-            resultData: conflict.localData,
-          ));
+          _events.add(
+            ConflictResolvedEvent(
+              conflict: conflict,
+              resolution: resolution,
+              resultData: conflict.localData,
+            ),
+          );
         }
         return ConflictResolutionResult(
           resolved: success,
@@ -171,11 +181,13 @@ class ConflictService<DB extends GeneratedDatabase> {
       case AcceptMerged(:final mergedData):
         final success = await _pushMergedData(op, mergedData);
         if (success) {
-          _events.add(ConflictResolvedEvent(
-            conflict: conflict,
-            resolution: resolution,
-            resultData: mergedData,
-          ));
+          _events.add(
+            ConflictResolvedEvent(
+              conflict: conflict,
+              resolution: resolution,
+              resultData: mergedData,
+            ),
+          );
         }
         return ConflictResolutionResult(
           resolved: success,
@@ -183,17 +195,18 @@ class ConflictService<DB extends GeneratedDatabase> {
         );
 
       case DeferResolution():
-        _events.add(ConflictUnresolvedEvent(
-          conflict: conflict,
-          reason: 'Resolution deferred',
-        ));
+        _events.add(
+          ConflictUnresolvedEvent(
+            conflict: conflict,
+            reason: 'Resolution deferred',
+          ),
+        );
         return const ConflictResolutionResult(resolved: false);
 
       case DiscardOperation():
-        _events.add(ConflictResolvedEvent(
-          conflict: conflict,
-          resolution: resolution,
-        ));
+        _events.add(
+          ConflictResolvedEvent(conflict: conflict, resolution: resolution),
+        );
         return const ConflictResolutionResult(resolved: true);
     }
   }
@@ -203,9 +216,9 @@ class ConflictService<DB extends GeneratedDatabase> {
     if (tableConfig == null) return;
 
     final entity = tableConfig.fromJson(conflict.serverData);
-    await _db.into(tableConfig.table).insertOnConflictUpdate(
-          tableConfig.getInsertable(entity),
-        );
+    await _db
+        .into(tableConfig.table)
+        .insertOnConflictUpdate(tableConfig.getInsertable(entity));
   }
 
   Future<bool> _forcePushOp(Op op) async {
@@ -249,9 +262,9 @@ class ConflictService<DB extends GeneratedDatabase> {
         final tableConfig = _tables[op.kind];
         if (tableConfig != null) {
           final entity = tableConfig.fromJson(mergedData);
-          await _db.into(tableConfig.table).insertOnConflictUpdate(
-                tableConfig.getInsertable(entity),
-              );
+          await _db
+              .into(tableConfig.table)
+              .insertOnConflictUpdate(tableConfig.getInsertable(entity));
         }
         return true;
       }
@@ -269,4 +282,3 @@ class ConflictService<DB extends GeneratedDatabase> {
     return false;
   }
 }
-

@@ -14,10 +14,7 @@ class PullPage {
 
 /// Результат push для одной операции.
 class OpPushResult {
-  const OpPushResult({
-    required this.opId,
-    required this.result,
-  });
+  const OpPushResult({required this.opId, required this.result});
 
   /// ID операции.
   final String opId;
@@ -33,9 +30,7 @@ class OpPushResult {
 
 /// Результат push для пакета операций.
 class BatchPushResult {
-  const BatchPushResult({
-    required this.results,
-  });
+  const BatchPushResult({required this.results});
 
   final List<OpPushResult> results;
 
@@ -79,10 +74,7 @@ abstract interface class TransportAdapter {
   Future<PushResult> forcePush(Op op);
 
   /// Получить текущую версию сущности с сервера.
-  Future<FetchResult> fetch({
-    required String kind,
-    required String id,
-  });
+  Future<FetchResult> fetch({required String kind, required String id});
 
   /// Проверить доступность сервера.
   Future<bool> health();
@@ -95,10 +87,7 @@ sealed class FetchResult {
 
 /// Сущность найдена.
 class FetchSuccess extends FetchResult {
-  const FetchSuccess({
-    required this.data,
-    this.version,
-  });
+  const FetchSuccess({required this.data, this.version});
 
   final Map<String, Object?> data;
   final String? version;

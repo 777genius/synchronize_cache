@@ -30,13 +30,12 @@ class PushStats {
     int? conflicts,
     int? conflictsResolved,
     int? errors,
-  }) =>
-      PushStats(
-        pushed: pushed ?? this.pushed,
-        conflicts: conflicts ?? this.conflicts,
-        conflictsResolved: conflictsResolved ?? this.conflictsResolved,
-        errors: errors ?? this.errors,
-      );
+  }) => PushStats(
+    pushed: pushed ?? this.pushed,
+    conflicts: conflicts ?? this.conflicts,
+    conflictsResolved: conflictsResolved ?? this.conflictsResolved,
+    errors: errors ?? this.errors,
+  );
 }
 
 /// Сервис для отправки локальных изменений на сервер.
@@ -47,11 +46,11 @@ class PushService {
     required ConflictService<dynamic> conflictService,
     required SyncConfig config,
     required StreamController<SyncEvent> events,
-  })  : _outbox = outbox,
-        _transport = transport,
-        _conflictService = conflictService,
-        _config = config,
-        _events = events;
+  }) : _outbox = outbox,
+       _transport = transport,
+       _conflictService = conflictService,
+       _config = config,
+       _events = events;
 
   final OutboxService _outbox;
   final TransportAdapter _transport;
@@ -80,12 +79,14 @@ class PushService {
             case PushSuccess():
               successOpIds.add(opResult.opId);
               counters.pushed++;
-              _events.add(OperationPushedEvent(
-                opId: op.opId,
-                kind: op.kind,
-                entityId: op.id,
-                operationType: op is UpsertOp ? OpType.upsert : OpType.delete,
-              ));
+              _events.add(
+                OperationPushedEvent(
+                  opId: op.opId,
+                  kind: op.kind,
+                  entityId: op.id,
+                  operationType: op is UpsertOp ? OpType.upsert : OpType.delete,
+                ),
+              );
 
             case final PushConflict conflict:
               counters.conflicts++;
@@ -96,13 +97,15 @@ class PushService {
 
             case final PushError error:
               counters.errors++;
-              _events.add(OperationFailedEvent(
-                opId: op.opId,
-                kind: op.kind,
-                entityId: op.id,
-                error: error.error,
-                willRetry: !_config.skipConflictingOps,
-              ));
+              _events.add(
+                OperationFailedEvent(
+                  opId: op.opId,
+                  kind: op.kind,
+                  entityId: op.id,
+                  error: error.error,
+                  willRetry: !_config.skipConflictingOps,
+                ),
+              );
           }
         }
 
@@ -121,9 +124,11 @@ class PushService {
         if (conflictOps.isNotEmpty) {
           await _outbox.ack(
             conflictOps.keys
-                .where((op) =>
-                    successOpIds.contains(op.opId) ||
-                    _config.skipConflictingOps)
+                .where(
+                  (op) =>
+                      successOpIds.contains(op.opId) ||
+                      _config.skipConflictingOps,
+                )
                 .map((op) => op.opId),
           );
         }
@@ -159,7 +164,8 @@ class PushService {
           );
         }
         final backoff =
-            _config.backoffMin * math.pow(_config.backoffMultiplier, attempt - 1);
+            _config.backoffMin *
+            math.pow(_config.backoffMultiplier, attempt - 1);
         final delay =
             backoff > _config.backoffMax ? _config.backoffMax : backoff;
 
@@ -176,10 +182,9 @@ class _PushCounters {
   int errors = 0;
 
   PushStats toStats() => PushStats(
-        pushed: pushed,
-        conflicts: conflicts,
-        conflictsResolved: conflictsResolved,
-        errors: errors,
-      );
+    pushed: pushed,
+    conflicts: conflicts,
+    conflictsResolved: conflictsResolved,
+    errors: errors,
+  );
 }
-

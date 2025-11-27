@@ -1,7 +1,8 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:offline_first_sync_drift/src/tables/sync_data_classes.dart' as i1;
+import 'package:offline_first_sync_drift/src/tables/sync_data_classes.dart'
+    as i1;
 import 'package:offline_first_sync_drift/src/tables/cursors.drift.dart' as i2;
 import 'package:offline_first_sync_drift/src/tables/cursors.dart' as i3;
 

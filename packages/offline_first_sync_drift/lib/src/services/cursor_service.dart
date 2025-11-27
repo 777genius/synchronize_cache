@@ -29,10 +29,13 @@ class CursorService {
 
   /// Сбросить курсор для типа сущности.
   Future<void> reset(String kind) async {
-    await set(kind, Cursor(
-      ts: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      lastId: '',
-    ));
+    await set(
+      kind,
+      Cursor(
+        ts: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        lastId: '',
+      ),
+    );
   }
 
   /// Сбросить все курсоры (кроме служебных).
@@ -67,4 +70,3 @@ class CursorService {
     }
   }
 }
-

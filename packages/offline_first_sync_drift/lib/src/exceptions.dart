@@ -15,7 +15,9 @@ sealed class SyncException implements Exception {
 
   @override
   String toString() =>
-      cause == null ? '$runtimeType: $message' : '$runtimeType: $message\nCaused by: $cause';
+      cause == null
+          ? '$runtimeType: $message'
+          : '$runtimeType: $message\nCaused by: $cause';
 }
 
 /// Ошибка сети (недоступность сервера, таймаут).
@@ -24,11 +26,7 @@ class NetworkException extends SyncException {
 
   /// Создать из сетевой ошибки.
   factory NetworkException.fromError(Object error, [StackTrace? stackTrace]) =>
-      NetworkException(
-        'Network request failed: $error',
-        error,
-        stackTrace,
-      );
+      NetworkException('Network request failed: $error', error, stackTrace);
 }
 
 /// Ошибка транспорта (неожиданный ответ сервера).
@@ -48,16 +46,18 @@ class TransportException extends SyncException {
   final String? responseBody;
 
   /// Создать для неуспешного HTTP ответа.
-  factory TransportException.httpError(int statusCode, [String? body]) => TransportException(
+  factory TransportException.httpError(int statusCode, [String? body]) =>
+      TransportException(
         'HTTP error $statusCode',
         statusCode: statusCode,
         responseBody: body,
       );
 
   @override
-  String toString() => statusCode == null
-      ? 'TransportException: $message'
-      : 'TransportException: $message (status: $statusCode)';
+  String toString() =>
+      statusCode == null
+          ? 'TransportException: $message'
+          : 'TransportException: $message (status: $statusCode)';
 }
 
 /// Ошибка базы данных.
@@ -66,11 +66,7 @@ class DatabaseException extends SyncException {
 
   /// Создать из ошибки БД.
   factory DatabaseException.fromError(Object error, [StackTrace? stackTrace]) =>
-      DatabaseException(
-        'Database operation failed: $error',
-        error,
-        stackTrace,
-      );
+      DatabaseException('Database operation failed: $error', error, stackTrace);
 }
 
 /// Неразрешённый конфликт данных.
@@ -150,9 +146,6 @@ class ParseException extends SyncException {
   const ParseException(super.message, [super.cause, super.stackTrace]);
 
   /// Создать из ошибки парсинга.
-  factory ParseException.fromError(Object error, [StackTrace? stackTrace]) => ParseException(
-        'Failed to parse data: $error',
-        error,
-        stackTrace,
-      );
+  factory ParseException.fromError(Object error, [StackTrace? stackTrace]) =>
+      ParseException('Failed to parse data: $error', error, stackTrace);
 }

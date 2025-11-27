@@ -4,10 +4,40 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:offline_first_sync_drift/offline_first_sync_drift.dart';
 
+/// Provider function for authorization token.
 typedef AuthTokenProvider = Future<String> Function();
 
-/// REST реализация TransportAdapter с полной поддержкой conflict resolution.
+/// REST implementation of [TransportAdapter] with full conflict resolution support.
+///
+/// Features:
+/// - Automatic retry with exponential backoff
+/// - Parallel push support via [pushConcurrency]
+/// - Batch API support via [enableBatch]
+/// - Conflict detection with `409 Conflict` response handling
+/// - Force push headers (`X-Force-Update`, `X-Force-Delete`)
+/// - Idempotency support via `X-Idempotency-Key` header
+///
+/// Example:
+/// ```dart
+/// final transport = RestTransport(
+///   base: Uri.parse('https://api.example.com'),
+///   token: () async => 'Bearer ${await getToken()}',
+///   pushConcurrency: 5,
+/// );
+/// ```
 class RestTransport implements TransportAdapter {
+  /// Creates a new REST transport.
+  ///
+  /// [base] is the base URL for all API requests.
+  /// [token] is a function that returns the authorization token.
+  /// [client] is an optional HTTP client (defaults to a new client).
+  /// [backoffMin] is the minimum retry delay (default: 1 second).
+  /// [backoffMax] is the maximum retry delay (default: 2 minutes).
+  /// [maxRetries] is the maximum number of retry attempts (default: 5).
+  /// [pushConcurrency] is the number of parallel push requests (default: 1).
+  /// [enableBatch] enables batch API mode (default: false).
+  /// [batchSize] is the maximum operations per batch request (default: 100).
+  /// [batchPath] is the batch endpoint path (default: 'batch').
   RestTransport({
     required this.base,
     required this.token,
@@ -21,42 +51,42 @@ class RestTransport implements TransportAdapter {
     this.batchPath = 'batch',
   }) : client = client ?? http.Client();
 
-  /// Базовый URL API.
+  /// Base URL for all API requests.
   final Uri base;
 
-  /// Провайдер токена авторизации.
+  /// Authorization token provider function.
   final AuthTokenProvider token;
 
-  /// HTTP клиент.
+  /// HTTP client used for requests.
   final http.Client client;
 
-  /// Минимальная задержка при retry.
+  /// Minimum delay between retry attempts.
   final Duration backoffMin;
 
-  /// Максимальная задержка при retry.
+  /// Maximum delay between retry attempts.
   final Duration backoffMax;
 
-  /// Максимальное количество попыток.
+  /// Maximum number of retry attempts.
   final int maxRetries;
 
-  /// Количество одновременных запросов при push.
+  /// Number of concurrent push requests.
   ///
-  /// Если 1 - запросы отправляются последовательно (по умолчанию).
-  /// Если > 1 - запросы отправляются пачками параллельно.
+  /// If 1, requests are sent sequentially (default).
+  /// If > 1, requests are sent in parallel batches.
   final int pushConcurrency;
 
-  /// Включить использование Batch API.
+  /// Enable batch API mode.
   final bool enableBatch;
 
-  /// Максимальное количество операций в одном batch запросе.
+  /// Maximum operations per batch request.
   final int batchSize;
 
-  /// Путь к batch endpoint (относительно base).
+  /// Batch endpoint path (relative to [base]).
   final String batchPath;
 
-  Uri _url(String path, [Map<String, String>? q]) =>
-      Uri.parse('${base.toString().replaceAll(RegExp(r"/+$"), '')}/$path')
-          .replace(queryParameters: q);
+  Uri _url(String path, [Map<String, String>? q]) => Uri.parse(
+    '${base.toString().replaceAll(RegExp(r"/+$"), '')}/$path',
+  ).replace(queryParameters: q);
 
   Map<String, String> _headers(String auth, {String? version}) {
     final headers = {
@@ -70,6 +100,14 @@ class RestTransport implements TransportAdapter {
     return headers;
   }
 
+  /// Pulls entities from the server with pagination.
+  ///
+  /// Makes a GET request to `/{kind}` with query parameters:
+  /// - `updatedSince`: ISO8601 timestamp
+  /// - `limit`: page size
+  /// - `pageToken`: next page token (if provided)
+  /// - `afterId`: cursor ID (if provided)
+  /// - `includeDeleted`: include soft-deleted entities
   @override
   Future<PullPage> pull({
     required String kind,
@@ -89,7 +127,8 @@ class RestTransport implements TransportAdapter {
     if (afterId != null) params['afterId'] = afterId;
 
     final res = await _withRetry(
-        () => client.get(_url(kind, params), headers: _headers(auth)));
+      () => client.get(_url(kind, params), headers: _headers(auth)),
+    );
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final body = jsonDecode(res.body) as Map<String, Object?>;
@@ -101,6 +140,12 @@ class RestTransport implements TransportAdapter {
     throw TransportException.httpError(res.statusCode, res.body);
   }
 
+  /// Pushes operations to the server.
+  ///
+  /// If [enableBatch] is true, uses batch API.
+  /// If [pushConcurrency] > 1, sends requests in parallel.
+  ///
+  /// Returns [BatchPushResult] with results for each operation.
   @override
   Future<BatchPushResult> push(List<Op> ops) async {
     if (ops.isEmpty) {
@@ -118,9 +163,10 @@ class RestTransport implements TransportAdapter {
     if (pushConcurrency > 1) {
       // Параллельная отправка батчами
       for (var i = 0; i < ops.length; i += pushConcurrency) {
-        final end = (i + pushConcurrency < ops.length)
-            ? i + pushConcurrency
-            : ops.length;
+        final end =
+            (i + pushConcurrency < ops.length)
+                ? i + pushConcurrency
+                : ops.length;
         final chunk = ops.sublist(i, end);
 
         final chunkResults = await Future.wait(
@@ -155,9 +201,10 @@ class RestTransport implements TransportAdapter {
     if (pushConcurrency > 1) {
       // Обрабатываем чанки параллельно
       for (var i = 0; i < chunks.length; i += pushConcurrency) {
-        final end = (i + pushConcurrency < chunks.length)
-            ? i + pushConcurrency
-            : chunks.length;
+        final end =
+            (i + pushConcurrency < chunks.length)
+                ? i + pushConcurrency
+                : chunks.length;
         final batchGroup = chunks.sublist(i, end);
 
         final groupResults = await Future.wait(
@@ -182,34 +229,36 @@ class RestTransport implements TransportAdapter {
   Future<BatchPushResult> _pushBatchChunk(List<Op> chunk, String auth) async {
     try {
       final payload = {
-        'ops': chunk.map((op) {
-          final map = <String, Object?>{
-            'opId': op.opId,
-            'kind': op.kind,
-            'id': op.id,
-            'type': op is UpsertOp ? 'upsert' : 'delete',
-          };
+        'ops':
+            chunk.map((op) {
+              final map = <String, Object?>{
+                'opId': op.opId,
+                'kind': op.kind,
+                'id': op.id,
+                'type': op is UpsertOp ? 'upsert' : 'delete',
+              };
 
-          if (op is UpsertOp) {
-            map['payload'] = op.payloadJson;
-            if (op.baseUpdatedAt != null) {
-              map['baseUpdatedAt'] =
-                  op.baseUpdatedAt!.toUtc().toIso8601String();
-            }
-          } else if (op is DeleteOp) {
-            if (op.baseUpdatedAt != null) {
-              map['baseUpdatedAt'] =
-                  op.baseUpdatedAt!.toUtc().toIso8601String();
-            }
-          }
-          return map;
-        }).toList(),
+              if (op is UpsertOp) {
+                map['payload'] = op.payloadJson;
+                if (op.baseUpdatedAt != null) {
+                  map['baseUpdatedAt'] =
+                      op.baseUpdatedAt!.toUtc().toIso8601String();
+                }
+              } else if (op is DeleteOp) {
+                if (op.baseUpdatedAt != null) {
+                  map['baseUpdatedAt'] =
+                      op.baseUpdatedAt!.toUtc().toIso8601String();
+                }
+              }
+              return map;
+            }).toList(),
       };
 
       final res = await _withRetry(() async {
-        final req = http.Request('POST', _url(batchPath))
-          ..headers.addAll(_headers(auth))
-          ..body = jsonEncode(payload);
+        final req =
+            http.Request('POST', _url(batchPath))
+              ..headers.addAll(_headers(auth))
+              ..body = jsonEncode(payload);
         return http.Response.fromStream(await client.send(req));
       });
 
@@ -226,18 +275,21 @@ class RestTransport implements TransportAdapter {
         }
 
         // Формируем итоговый список, сохраняя порядок ops в чанке
-        final results = chunk.map((op) {
-          if (resultsMap.containsKey(op.opId)) {
-            return resultsMap[op.opId]!;
-          }
-          // Если сервер не вернул результат для операции
-          return OpPushResult(
-            opId: op.opId,
-            result: PushError(
-              http.ClientException('No result for op ${op.opId} in batch response'),
-            ),
-          );
-        }).toList();
+        final results =
+            chunk.map((op) {
+              if (resultsMap.containsKey(op.opId)) {
+                return resultsMap[op.opId]!;
+              }
+              // Если сервер не вернул результат для операции
+              return OpPushResult(
+                opId: op.opId,
+                result: PushError(
+                  http.ClientException(
+                    'No result for op ${op.opId} in batch response',
+                  ),
+                ),
+              );
+            }).toList();
 
         return BatchPushResult(results: results);
       }
@@ -267,15 +319,17 @@ class RestTransport implements TransportAdapter {
       final conflictBody = (item['error'] as Map<String, Object?>?) ?? item;
       result = _parseConflictMap(conflictBody);
     } else {
-      result = PushError(
-        http.ClientException('Batch op failed: $statusCode'),
-      );
+      result = PushError(http.ClientException('Batch op failed: $statusCode'));
     }
 
     return OpPushResult(opId: opId, result: result);
   }
 
-  Future<PushResult> _pushSingleOp(Op op, String auth, {bool force = false}) async {
+  Future<PushResult> _pushSingleOp(
+    Op op,
+    String auth, {
+    bool force = false,
+  }) async {
     try {
       if (op is UpsertOp) {
         return await _pushUpsert(op, auth, force: force);
@@ -290,7 +344,11 @@ class RestTransport implements TransportAdapter {
     }
   }
 
-  Future<PushResult> _pushUpsert(UpsertOp op, String auth, {bool force = false}) async {
+  Future<PushResult> _pushUpsert(
+    UpsertOp op,
+    String auth, {
+    bool force = false,
+  }) async {
     final id = op.id;
     final method = id.isEmpty ? 'POST' : 'PUT';
     final path = id.isEmpty ? op.kind : '${op.kind}/$id';
@@ -309,16 +367,21 @@ class RestTransport implements TransportAdapter {
     }
 
     final res = await _withRetry(() async {
-      final req = http.Request(method, uri)
-        ..headers.addAll(headers)
-        ..body = jsonEncode(payload);
+      final req =
+          http.Request(method, uri)
+            ..headers.addAll(headers)
+            ..body = jsonEncode(payload);
       return http.Response.fromStream(await client.send(req));
     });
 
     return _parseResponse(res, op.kind, op.id);
   }
 
-  Future<PushResult> _pushDelete(DeleteOp op, String auth, {bool force = false}) async {
+  Future<PushResult> _pushDelete(
+    DeleteOp op,
+    String auth, {
+    bool force = false,
+  }) async {
     final uri = _url('${op.kind}/${op.id}');
 
     final headers = _headers(auth);
@@ -335,9 +398,8 @@ class RestTransport implements TransportAdapter {
       };
     }
 
-    final deleteUri = queryParams != null
-        ? uri.replace(queryParameters: queryParams)
-        : uri;
+    final deleteUri =
+        queryParams != null ? uri.replace(queryParameters: queryParams) : uri;
 
     final res = await _withRetry(() async {
       final req = http.Request('DELETE', deleteUri)..headers.addAll(headers);
@@ -401,30 +463,35 @@ class RestTransport implements TransportAdapter {
     );
   }
 
-  PushConflict _parseConflictMap(Map<String, Object?> body,
-      [String? headerEtag]) {
+  PushConflict _parseConflictMap(
+    Map<String, Object?> body, [
+    String? headerEtag,
+  ]) {
     Map<String, Object?> serverData = {};
     DateTime serverTimestamp = DateTime.now().toUtc();
     String? serverVersion;
 
     try {
       // Поддержка разных форматов ответа от сервера
-      serverData = (body['current'] as Map<String, Object?>?) ??
+      serverData =
+          (body['current'] as Map<String, Object?>?) ??
           (body['serverData'] as Map<String, Object?>?) ??
           body;
 
-      final ts = body['serverTimestamp'] ??
+      final ts =
+          body['serverTimestamp'] ??
           serverData[SyncFields.updatedAt] ??
           serverData[SyncFields.updatedAtSnake];
-        if (ts != null) {
-          serverTimestamp =
-              ts is DateTime ? ts : DateTime.parse(ts.toString()).toUtc();
-        }
+      if (ts != null) {
+        serverTimestamp =
+            ts is DateTime ? ts : DateTime.parse(ts.toString()).toUtc();
+      }
 
-        serverVersion = body['version']?.toString() ??
-            serverData['version']?.toString() ??
-            headerEtag;
-      } catch (_) {}
+      serverVersion =
+          body['version']?.toString() ??
+          serverData['version']?.toString() ??
+          headerEtag;
+    } catch (_) {}
 
     return PushConflict(
       serverData: serverData,
@@ -433,23 +500,28 @@ class RestTransport implements TransportAdapter {
     );
   }
 
+  /// Forces push of an operation, bypassing conflict detection.
+  ///
+  /// Sends `X-Force-Update` or `X-Force-Delete` header.
   @override
   Future<PushResult> forcePush(Op op) async {
     final auth = await token();
     return _pushSingleOp(op, auth, force: true);
   }
 
+  /// Fetches a single entity from the server.
+  ///
+  /// Makes a GET request to `/{kind}/{id}`.
+  /// Returns [FetchSuccess], [FetchNotFound], or [FetchError].
   @override
-  Future<FetchResult> fetch({
-    required String kind,
-    required String id,
-  }) async {
+  Future<FetchResult> fetch({required String kind, required String id}) async {
     try {
       final auth = await token();
       final uri = _url('$kind/$id');
 
       final res = await _withRetry(
-          () => client.get(uri, headers: _headers(auth)));
+        () => client.get(uri, headers: _headers(auth)),
+      );
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, Object?>;
@@ -461,9 +533,7 @@ class RestTransport implements TransportAdapter {
         return const FetchNotFound();
       }
 
-      return FetchError(
-        TransportException.httpError(res.statusCode, res.body),
-      );
+      return FetchError(TransportException.httpError(res.statusCode, res.body));
     } on SyncException catch (e, st) {
       return FetchError(e, st);
     } catch (e, st) {
@@ -471,7 +541,9 @@ class RestTransport implements TransportAdapter {
     }
   }
 
-  Future<http.Response> _withRetry(Future<http.Response> Function() send) async {
+  Future<http.Response> _withRetry(
+    Future<http.Response> Function() send,
+  ) async {
     var attempt = 0;
     var delay = backoffMin;
 
@@ -521,6 +593,10 @@ class RestTransport implements TransportAdapter {
     return next > backoffMax ? backoffMax : next;
   }
 
+  /// Checks server health.
+  ///
+  /// Makes a GET request to `/health`.
+  /// Returns `true` if server responds with 2xx status.
   @override
   Future<bool> health() async {
     try {

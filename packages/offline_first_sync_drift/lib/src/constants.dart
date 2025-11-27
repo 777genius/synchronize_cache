@@ -58,4 +58,3 @@ abstract final class CursorKinds {
   /// Курсор для хранения времени последнего full resync.
   static const fullResync = '__full_resync__';
 }
-

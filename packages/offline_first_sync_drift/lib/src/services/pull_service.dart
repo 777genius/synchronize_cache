@@ -19,12 +19,12 @@ class PullService<DB extends GeneratedDatabase> {
     required CursorService cursorService,
     required SyncConfig config,
     required StreamController<SyncEvent> events,
-  })  : _db = db,
-        _transport = transport,
-        _tables = tables,
-        _cursorService = cursorService,
-        _config = config,
-        _events = events;
+  }) : _db = db,
+       _transport = transport,
+       _tables = tables,
+       _cursorService = cursorService,
+       _config = config,
+       _events = events;
 
   final DB _db;
   final TransportAdapter _transport;
@@ -54,7 +54,8 @@ class PullService<DB extends GeneratedDatabase> {
 
     try {
       final cursor = await _cursorService.get(kind);
-      var since = cursor?.ts ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      var since =
+          cursor?.ts ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
       var afterId = cursor?.lastId;
 
       while (true) {
@@ -75,7 +76,8 @@ class PullService<DB extends GeneratedDatabase> {
         await _db.batch((batch) {
           for (final json in page.items) {
             final entity = tableConfig.fromJson(json);
-            final deletedAt = json[SyncFields.deletedAt] ?? json[SyncFields.deletedAtSnake];
+            final deletedAt =
+                json[SyncFields.deletedAt] ?? json[SyncFields.deletedAtSnake];
 
             if (deletedAt != null) {
               deletes++;
@@ -94,11 +96,18 @@ class PullService<DB extends GeneratedDatabase> {
         _events.add(CacheUpdateEvent(kind, upserts: upserts, deletes: deletes));
 
         final last = page.items.last;
-        final ts = last[SyncFields.updatedAt] ?? last[SyncFields.updatedAtSnake];
-        final id = (last[SyncFields.id] ?? last[SyncFields.idUpper] ?? last[SyncFields.uuid]).toString();
+        final ts =
+            last[SyncFields.updatedAt] ?? last[SyncFields.updatedAtSnake];
+        final id =
+            (last[SyncFields.id] ??
+                    last[SyncFields.idUpper] ??
+                    last[SyncFields.uuid])
+                .toString();
 
         if (ts == null) {
-          throw ParseException('Transport returned item without updatedAt for kind=$kind');
+          throw ParseException(
+            'Transport returned item without updatedAt for kind=$kind',
+          );
         }
 
         since = ts is DateTime ? ts : DateTime.parse(ts.toString()).toUtc();
@@ -127,4 +136,3 @@ class PullService<DB extends GeneratedDatabase> {
     return done;
   }
 }
-

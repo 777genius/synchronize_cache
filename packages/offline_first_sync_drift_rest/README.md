@@ -1,16 +1,15 @@
 # offline_first_sync_drift_rest
 
-REST транспорт для [offline_first_sync_drift](../offline_first_sync_drift).
+REST transport adapter for [offline_first_sync_drift](https://pub.dev/packages/offline_first_sync_drift).
 
-## Установка
+## Installation
 
 ```yaml
 dependencies:
-  offline_first_sync_drift_rest:
-    path: ../offline_first_sync_drift_rest
+  offline_first_sync_drift_rest: ^0.1.0
 ```
 
-## Использование
+## Usage
 
 ### RestTransport
 
@@ -23,7 +22,7 @@ final transport = RestTransport(
   backoffMin: const Duration(seconds: 1),
   backoffMax: const Duration(minutes: 2),
   maxRetries: 5,
-  pushConcurrency: 5, // Отправлять по 5 запросов параллельно
+  pushConcurrency: 5, // Send 5 requests in parallel
 );
 
 final engine = SyncEngine(
@@ -33,31 +32,31 @@ final engine = SyncEngine(
 );
 ```
 
-> **Performance Tip**: Использование `pushConcurrency: 5` ускоряет синхронизацию **в ~5 раз** при высокой задержке сети (latency). E2E тесты показывают сокращение времени отправки пачки операций с 600ms до 120ms (при задержке 50ms на запрос).
+> **Performance Tip**: Using `pushConcurrency: 5` speeds up synchronization **~5x** with high network latency. E2E tests show push batch time reduced from 600ms to 120ms (with 50ms latency per request).
 
-### Параметры
+### Parameters
 
-| Параметр | Тип | Описание |
-|----------|-----|----------|
-| `base` | `Uri` | Базовый URL API |
-| `token` | `Future<String> Function()` | Провайдер токена авторизации |
-| `client` | `http.Client?` | HTTP клиент (опционально) |
-| `backoffMin` | `Duration` | Минимальная задержка retry (default: 1s) |
-| `backoffMax` | `Duration` | Максимальная задержка retry (default: 2m) |
-| `maxRetries` | `int` | Максимум попыток (default: 5) |
-| `pushConcurrency` | `int` | Количество параллельных запросов при push (default: 1) |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base` | `Uri` | Base API URL |
+| `token` | `Future<String> Function()` | Authorization token provider |
+| `client` | `http.Client?` | HTTP client (optional) |
+| `backoffMin` | `Duration` | Minimum retry delay (default: 1s) |
+| `backoffMax` | `Duration` | Maximum retry delay (default: 2m) |
+| `maxRetries` | `int` | Maximum retry attempts (default: 5) |
+| `pushConcurrency` | `int` | Parallel push requests (default: 1) |
 
 ## REST API Contract
 
 ### Endpoints
 
-| Метод | URL | Описание |
-|-------|-----|----------|
-| `GET` | `/{kind}` | Pull с пагинацией |
-| `GET` | `/{kind}/{id}` | Fetch одной сущности |
-| `POST` | `/{kind}` | Создание (id генерируется сервером) |
-| `PUT` | `/{kind}/{id}` | Обновление |
-| `DELETE` | `/{kind}/{id}` | Удаление |
+| Method | URL | Description |
+|--------|-----|-------------|
+| `GET` | `/{kind}` | Pull with pagination |
+| `GET` | `/{kind}/{id}` | Fetch single entity |
+| `POST` | `/{kind}` | Create (server generates id) |
+| `PUT` | `/{kind}/{id}` | Update |
+| `DELETE` | `/{kind}/{id}` | Delete |
 | `GET` | `/health` | Health check |
 
 ### Query Parameters (Pull)
@@ -66,13 +65,13 @@ final engine = SyncEngine(
 GET /daily_feeling?updatedSince=2024-01-01T00:00:00Z&limit=100&includeDeleted=true
 ```
 
-| Параметр | Описание |
-|----------|----------|
+| Parameter | Description |
+|-----------|-------------|
 | `updatedSince` | ISO8601 timestamp |
-| `limit` | Размер страницы |
-| `pageToken` | Токен следующей страницы |
-| `afterId` | ID для курсорной пагинации |
-| `includeDeleted` | Включать soft-deleted |
+| `limit` | Page size |
+| `pageToken` | Next page token |
+| `afterId` | ID for cursor pagination |
+| `includeDeleted` | Include soft-deleted |
 
 ### Response Format (Pull)
 
@@ -87,7 +86,7 @@ GET /daily_feeling?updatedSince=2024-01-01T00:00:00Z&limit=100&includeDeleted=tr
 
 ### Conflict Detection
 
-При обновлении клиент передаёт `_baseUpdatedAt`:
+Client sends `_baseUpdatedAt` on update:
 
 ```json
 PUT /daily_feeling/123
@@ -97,7 +96,7 @@ PUT /daily_feeling/123
 }
 ```
 
-Сервер сравнивает с текущим `updated_at`. При несовпадении - `409 Conflict`:
+Server compares with current `updated_at`. On mismatch returns `409 Conflict`:
 
 ```json
 {
@@ -109,15 +108,15 @@ PUT /daily_feeling/123
 
 ### Force Push Headers
 
-| Header | Значение | Описание |
-|--------|----------|----------|
-| `X-Force-Update` | `true` | Принудительное обновление |
-| `X-Force-Delete` | `true` | Принудительное удаление |
-| `X-Idempotency-Key` | `{opId}` | Идемпотентность операций |
+| Header | Value | Description |
+|--------|-------|-------------|
+| `X-Force-Update` | `true` | Force update |
+| `X-Force-Delete` | `true` | Force delete |
+| `X-Idempotency-Key` | `{opId}` | Operation idempotency |
 
-## E2E Тестирование
+## E2E Testing
 
-Пакет включает `TestServer` для e2e тестов:
+Package includes `TestServer` for e2e tests:
 
 ```dart
 import 'package:offline_first_sync_drift_rest/test/e2e/helpers/test_server.dart';
@@ -134,19 +133,19 @@ tearDown(() async {
 });
 
 test('conflict resolution', () async {
-  // Seed данные
+  // Seed data
   server.seed('entity', {
     'id': 'e1',
     'name': 'Original',
     'updated_at': DateTime.utc(2024, 1, 1).toIso8601String(),
   });
   
-  // Симуляция конкурентного изменения
+  // Simulate concurrent modification
   server.update('entity', 'e1', {'name': 'Server Modified'});
   
-  // Тест...
+  // Test...
   
-  // Проверка
+  // Verify
   final data = server.get('entity', 'e1');
   expect(data?['name'], 'Expected Value');
 });
@@ -155,49 +154,54 @@ test('conflict resolution', () async {
 ### TestServer API
 
 ```dart
-// Данные
-server.seed(kind, data);           // Добавить сущность
-server.update(kind, id, data);     // Обновить напрямую
-server.get(kind, id);              // Получить сущность
-server.getAll(kind);               // Получить все по kind
-server.clear();                    // Очистить хранилище
+// Data
+server.seed(kind, data);           // Add entity
+server.update(kind, id, data);     // Update directly
+server.get(kind, id);              // Get entity
+server.getAll(kind);               // Get all by kind
+server.clear();                    // Clear storage
 
-// Симуляция ошибок
-server.failNextRequests(count, statusCode: 500);  // N ошибок
-server.delayNextRequests(Duration(ms: 100));      // Задержка
-server.returnInvalidJson(true);                   // Невалидный JSON
-server.returnIncompleteConflict(true);            // Неполный conflict response
-server.returnWrongEntity(true);                   // Неправильная сущность
+// Error simulation
+server.failNextRequests(count, statusCode: 500);  // N errors
+server.delayNextRequests(Duration(ms: 100));      // Delay
+server.returnInvalidJson(true);                   // Invalid JSON
+server.returnIncompleteConflict(true);            // Incomplete conflict response
+server.returnWrongEntity(true);                   // Wrong entity
 
-// Настройки
-server.conflictCheckEnabled = true;  // Включить проверку конфликтов
+// Settings
+server.conflictCheckEnabled = true;  // Enable conflict checking
 
-// Инспекция
-server.recordedRequests;  // Список всех запросов
-server.requestCounts;     // Счётчик по методам
+// Inspection
+server.recordedRequests;  // List of all requests
+server.requestCounts;     // Count by method
 ```
 
-## Тесты
+## Tests
 
 ```bash
-# Запуск e2e тестов
+# Run e2e tests
 dart test test/e2e/conflict_e2e_test.dart
 
-# С подробным выводом
+# With verbose output
 dart test test/e2e/ --reporter expanded
 ```
 
-### Покрытие тестами
+### Test Coverage
 
-- ✅ ConflictStrategy.serverWins
-- ✅ ConflictStrategy.clientWins  
-- ✅ ConflictStrategy.lastWriteWins
-- ✅ ConflictStrategy.merge (+ deepMerge, preservingMerge)
-- ✅ ConflictStrategy.autoPreserve
-- ✅ ConflictStrategy.manual
-- ✅ Delete conflicts
-- ✅ Batch conflicts
-- ✅ Table-specific configs
-- ✅ Network errors & retries
-- ✅ Invalid server responses
+- ConflictStrategy.serverWins
+- ConflictStrategy.clientWins  
+- ConflictStrategy.lastWriteWins
+- ConflictStrategy.merge (+ deepMerge, preservingMerge)
+- ConflictStrategy.autoPreserve
+- ConflictStrategy.manual
+- Delete conflicts
+- Batch conflicts
+- Table-specific configs
+- Network errors & retries
+- Invalid server responses
 
+## Additional Information
+
+- [GitHub Repository](https://github.com/cherrypick-agency/offline_first_sync_drift)
+- [API Documentation](https://pub.dev/documentation/offline_first_sync_drift_rest/latest/)
+- [Issue Tracker](https://github.com/cherrypick-agency/offline_first_sync_drift/issues)

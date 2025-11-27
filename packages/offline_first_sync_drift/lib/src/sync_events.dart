@@ -80,17 +80,17 @@ class SyncStats {
     int? conflicts,
     int? conflictsResolved,
     int? errors,
-  }) =>
-      SyncStats(
-        pushed: pushed ?? this.pushed,
-        pulled: pulled ?? this.pulled,
-        conflicts: conflicts ?? this.conflicts,
-        conflictsResolved: conflictsResolved ?? this.conflictsResolved,
-        errors: errors ?? this.errors,
-      );
+  }) => SyncStats(
+    pushed: pushed ?? this.pushed,
+    pulled: pulled ?? this.pulled,
+    conflicts: conflicts ?? this.conflicts,
+    conflictsResolved: conflictsResolved ?? this.conflictsResolved,
+    errors: errors ?? this.errors,
+  );
 
   @override
-  String toString() => 'SyncStats(pushed: $pushed, pulled: $pulled, '
+  String toString() =>
+      'SyncStats(pushed: $pushed, pulled: $pulled, '
       'conflicts: $conflicts, resolved: $conflictsResolved, errors: $errors)';
 }
 
@@ -107,10 +107,7 @@ class SyncErrorEvent implements SyncEvent {
 
 /// Обнаружен конфликт данных.
 class ConflictDetectedEvent implements SyncEvent {
-  ConflictDetectedEvent({
-    required this.conflict,
-    required this.strategy,
-  });
+  ConflictDetectedEvent({required this.conflict, required this.strategy});
 
   /// Информация о конфликте.
   final Conflict conflict;
@@ -119,7 +116,8 @@ class ConflictDetectedEvent implements SyncEvent {
   final ConflictStrategy strategy;
 
   @override
-  String toString() => 'ConflictDetected(${conflict.kind}/${conflict.entityId}, '
+  String toString() =>
+      'ConflictDetected(${conflict.kind}/${conflict.entityId}, '
       'strategy: $strategy)';
 }
 
@@ -141,16 +139,14 @@ class ConflictResolvedEvent implements SyncEvent {
   final Map<String, Object?>? resultData;
 
   @override
-  String toString() => 'ConflictResolved(${conflict.kind}/${conflict.entityId}, '
+  String toString() =>
+      'ConflictResolved(${conflict.kind}/${conflict.entityId}, '
       '${resolution.runtimeType})';
 }
 
 /// Конфликт не удалось разрешить автоматически.
 class ConflictUnresolvedEvent implements SyncEvent {
-  ConflictUnresolvedEvent({
-    required this.conflict,
-    required this.reason,
-  });
+  ConflictUnresolvedEvent({required this.conflict, required this.reason});
 
   /// Информация о конфликте.
   final Conflict conflict;
@@ -159,7 +155,8 @@ class ConflictUnresolvedEvent implements SyncEvent {
   final String reason;
 
   @override
-  String toString() => 'ConflictUnresolved(${conflict.kind}/${conflict.entityId}, '
+  String toString() =>
+      'ConflictUnresolved(${conflict.kind}/${conflict.entityId}, '
       'reason: $reason)';
 }
 
@@ -189,7 +186,8 @@ class DataMergedEvent implements SyncEvent {
   final Map<String, Object?> mergedData;
 
   @override
-  String toString() => 'DataMerged($kind/$entityId, '
+  String toString() =>
+      'DataMerged($kind/$entityId, '
       'local: ${localFields.length} fields, server: ${serverFields.length} fields)';
 }
 
@@ -201,7 +199,8 @@ class CacheUpdateEvent implements SyncEvent {
   final int deletes;
 
   @override
-  String toString() => 'CacheUpdate($kind, upserts: $upserts, deletes: $deletes)';
+  String toString() =>
+      'CacheUpdate($kind, upserts: $upserts, deletes: $deletes)';
 }
 
 /// Операция успешно отправлена.

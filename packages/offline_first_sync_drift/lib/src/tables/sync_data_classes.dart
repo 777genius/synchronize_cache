@@ -33,4 +33,3 @@ class SyncCursorData {
     required this.lastId,
   });
 }
-

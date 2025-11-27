@@ -22,24 +22,32 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
 
   /// Получить таблицу outbox.
   TableInfo<Table, SyncOutboxData> get _outbox =>
-      _outboxTable ??= allTables.whereType<TableInfo<Table, SyncOutboxData>>().firstWhere(
+      _outboxTable ??= allTables
+          .whereType<TableInfo<Table, SyncOutboxData>>()
+          .firstWhere(
             (t) => t.actualTableName == 'sync_outbox',
-            orElse: () => throw StateError(
-              'SyncOutbox table not found. Make sure to add:\n'
-              "include: {'package:offline_first_sync_drift/src/sync_tables.drift'}\n"
-              'to your @DriftDatabase annotation.',
-            ),
+            orElse:
+                () =>
+                    throw StateError(
+                      'SyncOutbox table not found. Make sure to add:\n'
+                      "include: {'package:offline_first_sync_drift/src/sync_tables.drift'}\n"
+                      'to your @DriftDatabase annotation.',
+                    ),
           );
 
   /// Получить таблицу cursors.
   TableInfo<Table, SyncCursorData> get _cursors =>
-      _cursorsTable ??= allTables.whereType<TableInfo<Table, SyncCursorData>>().firstWhere(
+      _cursorsTable ??= allTables
+          .whereType<TableInfo<Table, SyncCursorData>>()
+          .firstWhere(
             (t) => t.actualTableName == 'sync_cursors',
-            orElse: () => throw StateError(
-              'SyncCursors table not found. Make sure to add:\n'
-              "include: {'package:offline_first_sync_drift/src/sync_tables.drift'}\n"
-              'to your @DriftDatabase annotation.',
-            ),
+            orElse:
+                () =>
+                    throw StateError(
+                      'SyncCursors table not found. Make sure to add:\n'
+                      "include: {'package:offline_first_sync_drift/src/sync_tables.drift'}\n"
+                      'to your @DriftDatabase annotation.',
+                    ),
           );
 
   /// Добавить операцию в очередь отправки.
@@ -48,9 +56,10 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
 
     if (op is UpsertOp) {
       final baseTs = op.baseUpdatedAt?.toUtc().millisecondsSinceEpoch;
-      final changedFieldsJson = op.changedFields != null
-          ? jsonEncode(op.changedFields!.toList())
-          : null;
+      final changedFieldsJson =
+          op.changedFields != null
+              ? jsonEncode(op.changedFields!.toList())
+              : null;
 
       await into(_outbox).insertOnConflictUpdate(
         SyncOutboxCompanion.insert(
@@ -84,11 +93,12 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
 
   /// Получить операции из очереди для отправки.
   Future<List<Op>> takeOutbox({int limit = 100}) async {
-    final rows = await customSelect(
-      'SELECT * FROM ${TableNames.syncOutbox} ORDER BY ${TableColumns.ts} LIMIT ?',
-      variables: [Variable.withInt(limit)],
-      readsFrom: {_outbox},
-    ).get();
+    final rows =
+        await customSelect(
+          'SELECT * FROM ${TableNames.syncOutbox} ORDER BY ${TableColumns.ts} LIMIT ?',
+          variables: [Variable.withInt(limit)],
+          readsFrom: {_outbox},
+        ).get();
 
     return rows.map((row) {
       final opId = row.read<String>(TableColumns.opId);
@@ -96,12 +106,18 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
       final entityId = row.read<String>(TableColumns.entityId);
       final opType = row.read<String>(TableColumns.op);
       final tsMillis = row.read<int>(TableColumns.ts);
-      final baseUpdatedAtMillis = row.readNullable<int>(TableColumns.baseUpdatedAt);
+      final baseUpdatedAtMillis = row.readNullable<int>(
+        TableColumns.baseUpdatedAt,
+      );
 
       final ts = DateTime.fromMillisecondsSinceEpoch(tsMillis, isUtc: true);
-      final baseUpdatedAt = baseUpdatedAtMillis != null
-          ? DateTime.fromMillisecondsSinceEpoch(baseUpdatedAtMillis, isUtc: true)
-          : null;
+      final baseUpdatedAt =
+          baseUpdatedAtMillis != null
+              ? DateTime.fromMillisecondsSinceEpoch(
+                baseUpdatedAtMillis,
+                isUtc: true,
+              )
+              : null;
 
       if (opType == OpType.delete) {
         return DeleteOp(
@@ -114,11 +130,14 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
       }
 
       final payloadStr = row.readNullable<String>(TableColumns.payload);
-      final payload = payloadStr == null
-          ? <String, Object?>{}
-          : (jsonDecode(payloadStr) as Map<String, Object?>);
+      final payload =
+          payloadStr == null
+              ? <String, Object?>{}
+              : (jsonDecode(payloadStr) as Map<String, Object?>);
 
-      final changedFieldsStr = row.readNullable<String>(TableColumns.changedFields);
+      final changedFieldsStr = row.readNullable<String>(
+        TableColumns.changedFields,
+      );
       Set<String>? changedFields;
       if (changedFieldsStr != null) {
         final list = jsonDecode(changedFieldsStr) as List<dynamic>;
@@ -151,18 +170,22 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
 
   /// Получить курсор для типа сущности.
   Future<Cursor?> getCursor(String kind) async {
-    final rows = await customSelect(
-      'SELECT ${TableColumns.ts}, ${TableColumns.lastId} '
-      'FROM ${TableNames.syncCursors} WHERE ${TableColumns.kind} = ?',
-      variables: [Variable.withString(kind)],
-      readsFrom: {_cursors},
-    ).get();
+    final rows =
+        await customSelect(
+          'SELECT ${TableColumns.ts}, ${TableColumns.lastId} '
+          'FROM ${TableNames.syncCursors} WHERE ${TableColumns.kind} = ?',
+          variables: [Variable.withString(kind)],
+          readsFrom: {_cursors},
+        ).get();
 
     if (rows.isEmpty) return null;
 
     final row = rows.first;
     return Cursor(
-      ts: DateTime.fromMillisecondsSinceEpoch(row.read<int>(TableColumns.ts), isUtc: true),
+      ts: DateTime.fromMillisecondsSinceEpoch(
+        row.read<int>(TableColumns.ts),
+        isUtc: true,
+      ),
       lastId: row.read<String>(TableColumns.lastId),
     );
   }
