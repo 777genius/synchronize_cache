@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-01-27
+
+### Fixed
+
+- Fixed modular generation compatibility for Drift databases
+- Improved code examples in documentation
+
+### Documentation
+
+- Updated README with complete model examples including `@JsonSerializable`
+- Fixed import statements for modular generation (`import` instead of `part`)
+- Added missing dependencies (`json_annotation`, `json_serializable`) to installation guide
+- Improved conflict resolution examples with proper `switch` expression
+
 ## [0.1.0] - 2024-11-27
 
 ### Added
