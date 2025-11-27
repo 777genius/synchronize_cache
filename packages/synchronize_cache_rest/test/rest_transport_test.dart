@@ -962,25 +962,23 @@ void main() {
     });
 
     test('handles mixed results in batch', () async {
-      final client = MockClient((request) async {
-        return http.Response(
-          jsonEncode({
-            'results': [
-              {'opId': 'op-1', 'statusCode': 200},
-              {
-                'opId': 'op-2',
-                'statusCode': 409,
-                'error': {
-                  'current': {'id': '2', 'version': 'v2'}
-                }
-              },
-              {'opId': 'op-3', 'statusCode': 404},
-              {'opId': 'op-4', 'statusCode': 500},
-            ]
-          }),
-          200,
-        );
-      });
+      final client = MockClient((request) async => http.Response(
+            jsonEncode({
+              'results': [
+                {'opId': 'op-1', 'statusCode': 200},
+                {
+                  'opId': 'op-2',
+                  'statusCode': 409,
+                  'error': {
+                    'current': {'id': '2', 'version': 'v2'}
+                  }
+                },
+                {'opId': 'op-3', 'statusCode': 404},
+                {'opId': 'op-4', 'statusCode': 500},
+              ]
+            }),
+            200,
+          ));
 
       transport = createTransport(client, enableBatch: true);
 
@@ -1043,9 +1041,9 @@ void main() {
     });
 
     test('sends batches in parallel', () async {
-      final pending = <Completer>[];
+      final pending = <Completer<void>>[];
       final client = MockClient((request) async {
-        final c = Completer();
+        final c = Completer<void>();
         pending.add(c);
         await c.future;
         final body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -1075,10 +1073,12 @@ void main() {
             payloadJson: {}),
       ]);
 
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
       expect(pending.length, 2);
 
-      for (final c in pending) c.complete();
+      for (final c in pending) {
+        c.complete();
+      }
       await future;
     });
   });

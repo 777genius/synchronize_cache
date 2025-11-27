@@ -6,6 +6,7 @@ import 'package:synchronize_cache/src/cursor.dart';
 import 'package:synchronize_cache/src/op.dart';
 import 'package:synchronize_cache/src/tables/cursors.drift.dart';
 import 'package:synchronize_cache/src/tables/outbox.drift.dart';
+import 'package:synchronize_cache/src/tables/sync_data_classes.dart';
 
 /// Mixin для базы данных с поддержкой синхронизации.
 ///
@@ -17,7 +18,7 @@ import 'package:synchronize_cache/src/tables/outbox.drift.dart';
 /// Drift автоматически подключит sync_outbox и sync_cursors таблицы.
 mixin SyncDatabaseMixin on GeneratedDatabase {
   TableInfo<Table, SyncOutboxData>? _outboxTable;
-  TableInfo<Table, SyncCursor>? _cursorsTable;
+  TableInfo<Table, SyncCursorData>? _cursorsTable;
 
   /// Получить таблицу outbox.
   TableInfo<Table, SyncOutboxData> get _outbox =>
@@ -31,8 +32,8 @@ mixin SyncDatabaseMixin on GeneratedDatabase {
           );
 
   /// Получить таблицу cursors.
-  TableInfo<Table, SyncCursor> get _cursors =>
-      _cursorsTable ??= allTables.whereType<TableInfo<Table, SyncCursor>>().firstWhere(
+  TableInfo<Table, SyncCursorData> get _cursors =>
+      _cursorsTable ??= allTables.whereType<TableInfo<Table, SyncCursorData>>().firstWhere(
             (t) => t.actualTableName == 'sync_cursors',
             orElse: () => throw StateError(
               'SyncCursors table not found. Make sure to add:\n'

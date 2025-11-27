@@ -192,9 +192,9 @@ class SyncEngine<DB extends GeneratedDatabase> {
     var stats = const SyncStats();
 
     try {
-      _events.add(FullResyncStarted(reason));
-
-      _events.add(SyncStarted(SyncPhase.push));
+      _events
+        ..add(FullResyncStarted(reason))
+        ..add(SyncStarted(SyncPhase.push));
       final pushStats = await _pushService.pushAll();
       stats = stats.copyWith(
         pushed: pushStats.pushed,

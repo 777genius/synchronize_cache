@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
+import 'package:synchronize_cache/src/tables/sync_data_classes.dart';
 
 /// Таблица курсоров для стабильной пагинации при pull.
 /// Хранит позицию последней синхронизации по каждому kind.
+@UseRowClass(SyncCursorData)
 class SyncCursors extends Table {
   /// Тип сущности.
   TextColumn get kind => text()();

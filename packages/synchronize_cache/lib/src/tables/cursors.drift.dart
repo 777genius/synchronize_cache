@@ -1,18 +1,19 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:synchronize_cache/src/tables/cursors.drift.dart' as i1;
-import 'package:synchronize_cache/src/tables/cursors.dart' as i2;
+import 'package:synchronize_cache/src/tables/sync_data_classes.dart' as i1;
+import 'package:synchronize_cache/src/tables/cursors.drift.dart' as i2;
+import 'package:synchronize_cache/src/tables/cursors.dart' as i3;
 
 typedef $$SyncCursorsTableCreateCompanionBuilder =
-    i1.SyncCursorsCompanion Function({
+    i2.SyncCursorsCompanion Function({
       required String kind,
       required int ts,
       required String lastId,
       i0.Value<int> rowid,
     });
 typedef $$SyncCursorsTableUpdateCompanionBuilder =
-    i1.SyncCursorsCompanion Function({
+    i2.SyncCursorsCompanion Function({
       i0.Value<String> kind,
       i0.Value<int> ts,
       i0.Value<String> lastId,
@@ -20,7 +21,7 @@ typedef $$SyncCursorsTableUpdateCompanionBuilder =
     });
 
 class $$SyncCursorsTableFilterComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncCursorsTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncCursorsTable> {
   $$SyncCursorsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -45,7 +46,7 @@ class $$SyncCursorsTableFilterComposer
 }
 
 class $$SyncCursorsTableOrderingComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncCursorsTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncCursorsTable> {
   $$SyncCursorsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -70,7 +71,7 @@ class $$SyncCursorsTableOrderingComposer
 }
 
 class $$SyncCursorsTableAnnotationComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncCursorsTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncCursorsTable> {
   $$SyncCursorsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -92,38 +93,38 @@ class $$SyncCursorsTableTableManager
     extends
         i0.RootTableManager<
           i0.GeneratedDatabase,
-          i1.$SyncCursorsTable,
-          i1.SyncCursor,
-          i1.$$SyncCursorsTableFilterComposer,
-          i1.$$SyncCursorsTableOrderingComposer,
-          i1.$$SyncCursorsTableAnnotationComposer,
+          i2.$SyncCursorsTable,
+          i1.SyncCursorData,
+          i2.$$SyncCursorsTableFilterComposer,
+          i2.$$SyncCursorsTableOrderingComposer,
+          i2.$$SyncCursorsTableAnnotationComposer,
           $$SyncCursorsTableCreateCompanionBuilder,
           $$SyncCursorsTableUpdateCompanionBuilder,
           (
-            i1.SyncCursor,
+            i1.SyncCursorData,
             i0.BaseReferences<
               i0.GeneratedDatabase,
-              i1.$SyncCursorsTable,
-              i1.SyncCursor
+              i2.$SyncCursorsTable,
+              i1.SyncCursorData
             >,
           ),
-          i1.SyncCursor,
+          i1.SyncCursorData,
           i0.PrefetchHooks Function()
         > {
   $$SyncCursorsTableTableManager(
     i0.GeneratedDatabase db,
-    i1.$SyncCursorsTable table,
+    i2.$SyncCursorsTable table,
   ) : super(
         i0.TableManagerState(
           db: db,
           table: table,
           createFilteringComposer:
-              () => i1.$$SyncCursorsTableFilterComposer($db: db, $table: table),
+              () => i2.$$SyncCursorsTableFilterComposer($db: db, $table: table),
           createOrderingComposer:
               () =>
-                  i1.$$SyncCursorsTableOrderingComposer($db: db, $table: table),
+                  i2.$$SyncCursorsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer:
-              () => i1.$$SyncCursorsTableAnnotationComposer(
+              () => i2.$$SyncCursorsTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -133,7 +134,7 @@ class $$SyncCursorsTableTableManager
                 i0.Value<int> ts = const i0.Value.absent(),
                 i0.Value<String> lastId = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
-              }) => i1.SyncCursorsCompanion(
+              }) => i2.SyncCursorsCompanion(
                 kind: kind,
                 ts: ts,
                 lastId: lastId,
@@ -145,7 +146,7 @@ class $$SyncCursorsTableTableManager
                 required int ts,
                 required String lastId,
                 i0.Value<int> rowid = const i0.Value.absent(),
-              }) => i1.SyncCursorsCompanion.insert(
+              }) => i2.SyncCursorsCompanion.insert(
                 kind: kind,
                 ts: ts,
                 lastId: lastId,
@@ -169,27 +170,27 @@ class $$SyncCursorsTableTableManager
 typedef $$SyncCursorsTableProcessedTableManager =
     i0.ProcessedTableManager<
       i0.GeneratedDatabase,
-      i1.$SyncCursorsTable,
-      i1.SyncCursor,
-      i1.$$SyncCursorsTableFilterComposer,
-      i1.$$SyncCursorsTableOrderingComposer,
-      i1.$$SyncCursorsTableAnnotationComposer,
+      i2.$SyncCursorsTable,
+      i1.SyncCursorData,
+      i2.$$SyncCursorsTableFilterComposer,
+      i2.$$SyncCursorsTableOrderingComposer,
+      i2.$$SyncCursorsTableAnnotationComposer,
       $$SyncCursorsTableCreateCompanionBuilder,
       $$SyncCursorsTableUpdateCompanionBuilder,
       (
-        i1.SyncCursor,
+        i1.SyncCursorData,
         i0.BaseReferences<
           i0.GeneratedDatabase,
-          i1.$SyncCursorsTable,
-          i1.SyncCursor
+          i2.$SyncCursorsTable,
+          i1.SyncCursorData
         >,
       ),
-      i1.SyncCursor,
+      i1.SyncCursorData,
       i0.PrefetchHooks Function()
     >;
 
-class $SyncCursorsTable extends i2.SyncCursors
-    with i0.TableInfo<$SyncCursorsTable, i1.SyncCursor> {
+class $SyncCursorsTable extends i3.SyncCursors
+    with i0.TableInfo<$SyncCursorsTable, i1.SyncCursorData> {
   @override
   final i0.GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -234,7 +235,7 @@ class $SyncCursorsTable extends i2.SyncCursors
   static const String $name = 'sync_cursors';
   @override
   i0.VerificationContext validateIntegrity(
-    i0.Insertable<i1.SyncCursor> instance, {
+    i0.Insertable<i1.SyncCursorData> instance, {
     bool isInserting = false,
   }) {
     final context = i0.VerificationContext();
@@ -266,9 +267,9 @@ class $SyncCursorsTable extends i2.SyncCursors
   @override
   Set<i0.GeneratedColumn> get $primaryKey => {kind};
   @override
-  i1.SyncCursor map(Map<String, dynamic> data, {String? tablePrefix}) {
+  i1.SyncCursorData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return i1.SyncCursor(
+    return i1.SyncCursorData(
       kind:
           attachedDatabase.typeMapping.read(
             i0.DriftSqlType.string,
@@ -293,94 +294,7 @@ class $SyncCursorsTable extends i2.SyncCursors
   }
 }
 
-class SyncCursor extends i0.DataClass implements i0.Insertable<i1.SyncCursor> {
-  /// Тип сущности.
-  final String kind;
-
-  /// Timestamp последнего элемента (milliseconds UTC).
-  final int ts;
-
-  /// ID последнего элемента для разрешения коллизий при одинаковом ts.
-  final String lastId;
-  const SyncCursor({
-    required this.kind,
-    required this.ts,
-    required this.lastId,
-  });
-  @override
-  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
-    final map = <String, i0.Expression>{};
-    map['kind'] = i0.Variable<String>(kind);
-    map['ts'] = i0.Variable<int>(ts);
-    map['last_id'] = i0.Variable<String>(lastId);
-    return map;
-  }
-
-  i1.SyncCursorsCompanion toCompanion(bool nullToAbsent) {
-    return i1.SyncCursorsCompanion(
-      kind: i0.Value(kind),
-      ts: i0.Value(ts),
-      lastId: i0.Value(lastId),
-    );
-  }
-
-  factory SyncCursor.fromJson(
-    Map<String, dynamic> json, {
-    i0.ValueSerializer? serializer,
-  }) {
-    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
-    return SyncCursor(
-      kind: serializer.fromJson<String>(json['kind']),
-      ts: serializer.fromJson<int>(json['ts']),
-      lastId: serializer.fromJson<String>(json['lastId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
-    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'kind': serializer.toJson<String>(kind),
-      'ts': serializer.toJson<int>(ts),
-      'lastId': serializer.toJson<String>(lastId),
-    };
-  }
-
-  i1.SyncCursor copyWith({String? kind, int? ts, String? lastId}) =>
-      i1.SyncCursor(
-        kind: kind ?? this.kind,
-        ts: ts ?? this.ts,
-        lastId: lastId ?? this.lastId,
-      );
-  SyncCursor copyWithCompanion(i1.SyncCursorsCompanion data) {
-    return SyncCursor(
-      kind: data.kind.present ? data.kind.value : this.kind,
-      ts: data.ts.present ? data.ts.value : this.ts,
-      lastId: data.lastId.present ? data.lastId.value : this.lastId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncCursor(')
-          ..write('kind: $kind, ')
-          ..write('ts: $ts, ')
-          ..write('lastId: $lastId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(kind, ts, lastId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is i1.SyncCursor &&
-          other.kind == this.kind &&
-          other.ts == this.ts &&
-          other.lastId == this.lastId);
-}
-
-class SyncCursorsCompanion extends i0.UpdateCompanion<i1.SyncCursor> {
+class SyncCursorsCompanion extends i0.UpdateCompanion<i1.SyncCursorData> {
   final i0.Value<String> kind;
   final i0.Value<int> ts;
   final i0.Value<String> lastId;
@@ -399,7 +313,7 @@ class SyncCursorsCompanion extends i0.UpdateCompanion<i1.SyncCursor> {
   }) : kind = i0.Value(kind),
        ts = i0.Value(ts),
        lastId = i0.Value(lastId);
-  static i0.Insertable<i1.SyncCursor> custom({
+  static i0.Insertable<i1.SyncCursorData> custom({
     i0.Expression<String>? kind,
     i0.Expression<int>? ts,
     i0.Expression<String>? lastId,
@@ -413,13 +327,13 @@ class SyncCursorsCompanion extends i0.UpdateCompanion<i1.SyncCursor> {
     });
   }
 
-  i1.SyncCursorsCompanion copyWith({
+  i2.SyncCursorsCompanion copyWith({
     i0.Value<String>? kind,
     i0.Value<int>? ts,
     i0.Value<String>? lastId,
     i0.Value<int>? rowid,
   }) {
-    return i1.SyncCursorsCompanion(
+    return i2.SyncCursorsCompanion(
       kind: kind ?? this.kind,
       ts: ts ?? this.ts,
       lastId: lastId ?? this.lastId,

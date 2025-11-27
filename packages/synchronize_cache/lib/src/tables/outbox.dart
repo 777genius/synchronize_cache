@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
+import 'package:synchronize_cache/src/tables/sync_data_classes.dart';
 
 /// Таблица очереди операций для синхронизации.
 /// Хранит локальные изменения до отправки на сервер.
+@UseRowClass(SyncOutboxData)
 class SyncOutbox extends Table {
   /// Уникальный идентификатор операции.
   TextColumn get opId => text()();

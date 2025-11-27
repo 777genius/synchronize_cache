@@ -3,9 +3,10 @@
 // Tables (use include: {'package:synchronize_cache/src/sync_tables.drift'})
 export 'src/tables/sync_columns.dart';
 export 'src/tables/outbox.dart' show SyncOutbox;
-export 'src/tables/outbox.drift.dart' show SyncOutboxData, SyncOutboxCompanion;
+export 'src/tables/outbox.drift.dart' show SyncOutboxCompanion;
 export 'src/tables/cursors.dart' show SyncCursors;
-export 'src/tables/cursors.drift.dart' show SyncCursor, SyncCursorsCompanion;
+export 'src/tables/cursors.drift.dart' show SyncCursorsCompanion;
+export 'src/tables/sync_data_classes.dart';
 
 // Types
 export 'src/constants.dart';

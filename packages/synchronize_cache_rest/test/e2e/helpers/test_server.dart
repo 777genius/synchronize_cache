@@ -9,6 +9,7 @@ import 'dart:io';
 /// - Детекция конфликтов по _baseUpdatedAt
 /// - Force push через X-Force-Update header
 /// - Пагинация при pull
+/// - Batch API для пакетной обработки
 class TestServer {
   TestServer({this.conflictCheckEnabled = true});
 
@@ -113,13 +114,25 @@ class TestServer {
     _returnWrongEntity = enabled;
   }
 
+  DateTime _now() {
+    final now = DateTime.now().toUtc();
+    return DateTime.utc(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+  }
+
   /// Добавить данные в хранилище (seed).
   void seed(String kind, Map<String, Object?> data) {
     final id = data['id'] as String;
     _storage.putIfAbsent(kind, () => {});
     _versions.putIfAbsent(kind, () => {});
 
-    final now = DateTime.now().toUtc();
+    final now = _now();
     final seededData = Map<String, Object?>.from(data);
     seededData['updated_at'] ??= now.toIso8601String();
     seededData['created_at'] ??= now.toIso8601String();
@@ -141,7 +154,7 @@ class TestServer {
     _versions.putIfAbsent(kind, () => {});
 
     final existing = _storage[kind]![id];
-    final now = DateTime.now().toUtc();
+    final now = _now();
 
     final updatedData = <String, Object?>{
       ...?existing,
@@ -205,6 +218,11 @@ class TestServer {
         return;
       }
 
+      if (segments.first == 'batch' && method == 'POST') {
+        await _handleBatch(request, body);
+        return;
+      }
+
       final kind = segments.first;
 
       switch (method) {
@@ -233,6 +251,97 @@ class TestServer {
       }
     } catch (e, st) {
       _sendError(request, 500, 'Internal Server Error: $e\n$st');
+    }
+  }
+
+  Future<void> _handleBatch(
+      HttpRequest request, Map<String, Object?>? body) async {
+    if (body == null || !body.containsKey('ops')) {
+      _sendError(request, 400, 'Missing ops in body');
+      return;
+    }
+
+    final ops = (body['ops'] as List).cast<Map<String, Object?>>();
+    final results = <Map<String, Object?>>[];
+
+    for (final op in ops) {
+      final opId = op['opId'] as String;
+      final kind = op['kind'] as String;
+      final id = op['id'] as String;
+      final type = op['type'] as String;
+
+      try {
+        // Эмулируем результат отдельного запроса
+        final result = await _processBatchOp(kind, id, type, op, request);
+        results.add({'opId': opId, ...result});
+      } catch (e) {
+        results.add({
+          'opId': opId,
+          'statusCode': 500,
+          'error': e.toString(),
+        });
+      }
+    }
+
+    _sendJson(request, 200, {'results': results});
+  }
+
+  Future<Map<String, Object?>> _processBatchOp(
+    String kind,
+    String id,
+    String type,
+    Map<String, Object?> op,
+    HttpRequest originalRequest,
+  ) async {
+    final mockReq = _MockHttpRequest(originalRequest);
+
+    if (type == 'upsert') {
+      final payload = op['payload'] as Map<String, Object?>;
+      // Добавляем baseUpdatedAt в payload если он есть в op,
+      // так как логика update ожидает его там
+      if (op.containsKey('baseUpdatedAt')) {
+        payload['_baseUpdatedAt'] = op['baseUpdatedAt'];
+      }
+
+      if (id.isEmpty) {
+        await _handleCreate(mockReq, kind, payload);
+      } else {
+        await _handleUpdate(mockReq, kind, id, payload);
+      }
+    } else if (type == 'delete') {
+      final queryParams = <String, String>{};
+      if (op.containsKey('baseUpdatedAt')) {
+        queryParams['_baseUpdatedAt'] = op['baseUpdatedAt'] as String;
+      }
+      mockReq.overrideUri(Uri(queryParameters: queryParams));
+
+      await _handleDelete(mockReq, kind, id);
+    } else {
+      return {'statusCode': 400, 'error': 'Unknown type'};
+    }
+
+    if (mockReq.responseCode >= 200 && mockReq.responseCode < 300) {
+      final res = <String, Object?>{
+        'statusCode': mockReq.responseCode,
+      };
+      if (mockReq.responseBody != null) {
+        final data = jsonDecode(mockReq.responseBody!) as Map<String, Object?>;
+        res['data'] = data;
+        res['version'] = mockReq.responseHeaders['ETag'];
+      }
+      return res;
+    } else if (mockReq.responseCode == 409) {
+      // Конфликт
+      final body = jsonDecode(mockReq.responseBody!);
+      return {
+        'statusCode': 409,
+        'error': body,
+      };
+    } else {
+      return {
+        'statusCode': mockReq.responseCode,
+        'error': mockReq.responseBody,
+      };
     }
   }
 
@@ -285,8 +394,7 @@ class TestServer {
       if (idx >= 0) startIndex = idx + 1;
     }
 
-    final endIndex =
-        (startIndex + limit).clamp(0, items.length);
+    final endIndex = (startIndex + limit).clamp(0, items.length);
     final pageItems = items.sublist(startIndex, endIndex);
 
     String? nextPageToken;
@@ -327,7 +435,7 @@ class TestServer {
     _versions.putIfAbsent(kind, () => {});
 
     final id = body['id'] as String? ?? _generateId();
-    final now = DateTime.now().toUtc();
+    final now = _now();
 
     final data = <String, Object?>{
       ...body,
@@ -361,7 +469,7 @@ class TestServer {
       _storage.putIfAbsent(kind, () => {});
       _versions.putIfAbsent(kind, () => {});
 
-      final now = DateTime.now().toUtc();
+      final now = _now();
       final data = <String, Object?>{
         ...body,
         'id': id,
@@ -392,7 +500,7 @@ class TestServer {
       }
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _now();
     final updatedBody = Map<String, Object?>.from(body)
       ..remove('_baseUpdatedAt');
 
@@ -448,7 +556,7 @@ class TestServer {
 
   void _sendConflict(HttpRequest request, Map<String, Object?> serverData) {
     final serverTimestamp =
-        serverData['updated_at'] ?? DateTime.now().toUtc().toIso8601String();
+        serverData['updated_at'] ?? _now().toIso8601String();
 
     if (_returnIncompleteConflict) {
       _sendJson(request, 409, {
@@ -513,3 +621,79 @@ class RecordedRequest {
   final Map<String, Object?>? body;
 }
 
+class _MockHttpRequest implements HttpRequest {
+  _MockHttpRequest(this._original);
+  final HttpRequest _original;
+
+  int responseCode = 200;
+  String? responseBody;
+  final Map<String, String> responseHeaders = {};
+  Uri? _uriOverride;
+
+  void overrideUri(Uri uri) => _uriOverride = uri;
+
+  @override
+  Uri get uri => _uriOverride ?? _original.uri;
+
+  @override
+  HttpHeaders get headers =>
+      _MockHttpHeaders(_original.headers); // Use mock wrapper for headers
+
+  @override
+  HttpResponse get response => _MockHttpResponse(this);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MockHttpResponse implements HttpResponse {
+  _MockHttpResponse(this._req);
+  final _MockHttpRequest _req;
+
+  @override
+  set statusCode(int code) => _req.responseCode = code;
+
+  @override
+  HttpHeaders get headers =>
+      _MockHttpHeaders(null, _req.responseHeaders); // Pass null as source, map as target
+
+  @override
+  void write(Object? obj) {
+    _req.responseBody = obj?.toString();
+  }
+
+  @override
+  Future<void> close() async {} // no-op
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MockHttpHeaders implements HttpHeaders {
+  _MockHttpHeaders(this._headersSource, [this._headersMap]);
+
+  // Источник заголовков (либо реальные HttpHeaders, либо мапа для ответа)
+  final HttpHeaders? _headersSource;
+  final Map<String, String>? _headersMap;
+
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {
+    if (_headersMap != null) {
+      _headersMap[name] = value.toString();
+    }
+  }
+  
+  @override
+  set contentType(ContentType? contentType) {} // ignore
+
+  @override
+  String? value(String name) {
+    if (_headersSource != null) {
+      return _headersSource.value(name);
+    }
+    return _headersMap?[name];
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}

@@ -1,15 +1,12 @@
 targets:
   $default:
+    sources:
+      - lib/**
+      - test/**
+      - "tool/**"
     builders:
       drift_dev:
-        enabled: false
-
-      drift_dev:analyzer:
         enabled: true
         options: &options
           generate_connect_constructor: false
           scoped_dart_components: true
-
-      drift_dev:modular:
-        enabled: true
-        options: *options

@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 
 import 'helpers/test_server.dart';
 
-import 'full_resync_e2e_test.drift.dart';
+part 'full_resync_e2e_test.g.dart';
 
 class TestEntity {
   TestEntity({
@@ -65,7 +65,7 @@ class TestEntities extends Table with SyncColumns {
   include: {'package:synchronize_cache/src/sync_tables.drift'},
   tables: [TestEntities],
 )
-class TestDatabase extends $TestDatabase with SyncDatabaseMixin {
+class TestDatabase extends _$TestDatabase with SyncDatabaseMixin {
   TestDatabase() : super(NativeDatabase.memory());
 
   @override

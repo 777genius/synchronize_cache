@@ -1,6 +1,6 @@
 # Offline-first Cache Sync
 
-[![CI](https://github.com/cherry/synchronize_cache/actions/workflows/ci.yml/badge.svg)](https://github.com/cherry/synchronize_cache/actions/workflows/ci.yml)
+[![CI](https://github.com/cherrypick-agency/synchronize_cache/actions/workflows/ci.yml/badge.svg)](https://github.com/cherrypick-agency/synchronize_cache/actions/workflows/ci.yml)
 
 Dart/Flutter библиотека для offline-first работы с данными. Локальный кэш на Drift + синхронизация с сервером.
 
@@ -359,6 +359,19 @@ print('Ошибок: ${stats.errors}');
 ---
 
 ## Требования к серверу
+
+Сервер обязан поддерживать предсказуемый REST-контракт: идемпотентные PUT-запросы, стабильную пагинацию и проверку конфликтов по `updatedAt`. Полное руководство с примерами и чеклистом см. в [`docs/backend_guidelines.md`](docs/backend_guidelines.md).
+
+Краткое напоминание:
+
+- реализуйте CRUD-эндпоинты `/ {kind }` с фильтрами `updatedSince`, `afterId`, `limit`, `includeDeleted`;
+- держите `updatedAt` и (опционально) `deletedAt`, выставляя системные поля на сервере;
+- при PUT проверяйте `_baseUpdatedAt`, возвращайте `409` с текущими данными и поддерживайте `X-Force-Update` + `X-Idempotency-Key`;
+- отдавайте списки в формате `{ "items": [...], "nextPageToken": "..." }`, строя курсор по `(updatedAt, id)`;
+- ориентируйтесь на e2e-пример в `packages/synchronize_cache_rest/test/e2e`, если нужна референсная реализация.
+
+---
+
 ## CI/CD
 
 GitHub Actions пайплайн `.github/workflows/ci.yml` гоняет `dart analyze` и тесты для всех пакетов воркспейса (`packages/synchronize_cache`, `packages/synchronize_cache_rest`, `example`) на каждом push и pull request в ветки `main`/`master`. Локально можно повторить те же проверки командами:
@@ -370,13 +383,3 @@ dart test packages/synchronize_cache
 dart test packages/synchronize_cache_rest
 dart test
 ```
-
-Сервер обязан поддерживать предсказуемый REST-контракт: идемпотентные PUT-запросы, стабильную пагинацию и проверку конфликтов по `updatedAt`. Полное руководство с примерами и чеклистом см. в [`docs/backend_guidelines.md`](docs/backend_guidelines.md).
-
-Краткое напоминание:
-
-- реализуйте CRUD-эндпоинты `/ {kind }` с фильтрами `updatedSince`, `afterId`, `limit`, `includeDeleted`;
-- держите `updatedAt` и (опционально) `deletedAt`, выставляя системные поля на сервере;
-- при PUT проверяйте `_baseUpdatedAt`, возвращайте `409` с текущими данными и поддерживайте `X-Force-Update` + `X-Idempotency-Key`;
-- отдавайте списки в формате `{ "items": [...], "nextPageToken": "..." }`, строя курсор по `(updatedAt, id)`;
-- ориентируйтесь на e2e-пример в `packages/synchronize_cache_rest/test/e2e`, если нужна референсная реализация.

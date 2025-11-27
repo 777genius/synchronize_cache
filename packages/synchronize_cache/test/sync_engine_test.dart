@@ -1075,7 +1075,7 @@ void main() {
         updatedAt: DateTime(2024, 1, 1).toUtc(),
       ));
 
-      var itemsBefore = await db.select(db.testItems).get();
+      final itemsBefore = await db.select(db.testItems).get();
       expect(itemsBefore.length, 1);
       expect(itemsBefore.first.id, 'old-item');
 

@@ -20,7 +20,7 @@ class LocalSyncOutbox extends Table {
   String get tableName => 'sync_outbox';
 }
 
-@UseRowClass(SyncCursorsData)
+@UseRowClass(SyncCursorData)
 class LocalSyncCursors extends Table {
   TextColumn get kind => text()();
   IntColumn get ts => integer()();

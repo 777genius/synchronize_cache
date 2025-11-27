@@ -1,12 +1,13 @@
 // dart format width=80
 // ignore_for_file: type=lint
 import 'package:drift/drift.dart' as i0;
-import 'package:synchronize_cache/src/tables/outbox.drift.dart' as i1;
-import 'package:synchronize_cache/src/tables/outbox.dart' as i2;
-import 'package:drift/src/runtime/query_builder/query_builder.dart' as i3;
+import 'package:synchronize_cache/src/tables/sync_data_classes.dart' as i1;
+import 'package:synchronize_cache/src/tables/outbox.drift.dart' as i2;
+import 'package:synchronize_cache/src/tables/outbox.dart' as i3;
+import 'package:drift/src/runtime/query_builder/query_builder.dart' as i4;
 
 typedef $$SyncOutboxTableCreateCompanionBuilder =
-    i1.SyncOutboxCompanion Function({
+    i2.SyncOutboxCompanion Function({
       required String opId,
       required String kind,
       required String entityId,
@@ -19,7 +20,7 @@ typedef $$SyncOutboxTableCreateCompanionBuilder =
       i0.Value<int> rowid,
     });
 typedef $$SyncOutboxTableUpdateCompanionBuilder =
-    i1.SyncOutboxCompanion Function({
+    i2.SyncOutboxCompanion Function({
       i0.Value<String> opId,
       i0.Value<String> kind,
       i0.Value<String> entityId,
@@ -33,7 +34,7 @@ typedef $$SyncOutboxTableUpdateCompanionBuilder =
     });
 
 class $$SyncOutboxTableFilterComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncOutboxTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncOutboxTable> {
   $$SyncOutboxTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -88,7 +89,7 @@ class $$SyncOutboxTableFilterComposer
 }
 
 class $$SyncOutboxTableOrderingComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncOutboxTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncOutboxTable> {
   $$SyncOutboxTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -143,7 +144,7 @@ class $$SyncOutboxTableOrderingComposer
 }
 
 class $$SyncOutboxTableAnnotationComposer
-    extends i0.Composer<i0.GeneratedDatabase, i1.$SyncOutboxTable> {
+    extends i0.Composer<i0.GeneratedDatabase, i2.$SyncOutboxTable> {
   $$SyncOutboxTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -187,18 +188,18 @@ class $$SyncOutboxTableTableManager
     extends
         i0.RootTableManager<
           i0.GeneratedDatabase,
-          i1.$SyncOutboxTable,
+          i2.$SyncOutboxTable,
           i1.SyncOutboxData,
-          i1.$$SyncOutboxTableFilterComposer,
-          i1.$$SyncOutboxTableOrderingComposer,
-          i1.$$SyncOutboxTableAnnotationComposer,
+          i2.$$SyncOutboxTableFilterComposer,
+          i2.$$SyncOutboxTableOrderingComposer,
+          i2.$$SyncOutboxTableAnnotationComposer,
           $$SyncOutboxTableCreateCompanionBuilder,
           $$SyncOutboxTableUpdateCompanionBuilder,
           (
             i1.SyncOutboxData,
             i0.BaseReferences<
               i0.GeneratedDatabase,
-              i1.$SyncOutboxTable,
+              i2.$SyncOutboxTable,
               i1.SyncOutboxData
             >,
           ),
@@ -207,18 +208,18 @@ class $$SyncOutboxTableTableManager
         > {
   $$SyncOutboxTableTableManager(
     i0.GeneratedDatabase db,
-    i1.$SyncOutboxTable table,
+    i2.$SyncOutboxTable table,
   ) : super(
         i0.TableManagerState(
           db: db,
           table: table,
           createFilteringComposer:
-              () => i1.$$SyncOutboxTableFilterComposer($db: db, $table: table),
+              () => i2.$$SyncOutboxTableFilterComposer($db: db, $table: table),
           createOrderingComposer:
               () =>
-                  i1.$$SyncOutboxTableOrderingComposer($db: db, $table: table),
+                  i2.$$SyncOutboxTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer:
-              () => i1.$$SyncOutboxTableAnnotationComposer(
+              () => i2.$$SyncOutboxTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -234,7 +235,7 @@ class $$SyncOutboxTableTableManager
                 i0.Value<int?> baseUpdatedAt = const i0.Value.absent(),
                 i0.Value<String?> changedFields = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
-              }) => i1.SyncOutboxCompanion(
+              }) => i2.SyncOutboxCompanion(
                 opId: opId,
                 kind: kind,
                 entityId: entityId,
@@ -258,7 +259,7 @@ class $$SyncOutboxTableTableManager
                 i0.Value<int?> baseUpdatedAt = const i0.Value.absent(),
                 i0.Value<String?> changedFields = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
-              }) => i1.SyncOutboxCompanion.insert(
+              }) => i2.SyncOutboxCompanion.insert(
                 opId: opId,
                 kind: kind,
                 entityId: entityId,
@@ -288,18 +289,18 @@ class $$SyncOutboxTableTableManager
 typedef $$SyncOutboxTableProcessedTableManager =
     i0.ProcessedTableManager<
       i0.GeneratedDatabase,
-      i1.$SyncOutboxTable,
+      i2.$SyncOutboxTable,
       i1.SyncOutboxData,
-      i1.$$SyncOutboxTableFilterComposer,
-      i1.$$SyncOutboxTableOrderingComposer,
-      i1.$$SyncOutboxTableAnnotationComposer,
+      i2.$$SyncOutboxTableFilterComposer,
+      i2.$$SyncOutboxTableOrderingComposer,
+      i2.$$SyncOutboxTableAnnotationComposer,
       $$SyncOutboxTableCreateCompanionBuilder,
       $$SyncOutboxTableUpdateCompanionBuilder,
       (
         i1.SyncOutboxData,
         i0.BaseReferences<
           i0.GeneratedDatabase,
-          i1.$SyncOutboxTable,
+          i2.$SyncOutboxTable,
           i1.SyncOutboxData
         >,
       ),
@@ -307,7 +308,7 @@ typedef $$SyncOutboxTableProcessedTableManager =
       i0.PrefetchHooks Function()
     >;
 
-class $SyncOutboxTable extends i2.SyncOutbox
+class $SyncOutboxTable extends i3.SyncOutbox
     with i0.TableInfo<$SyncOutboxTable, i1.SyncOutboxData> {
   @override
   final i0.GeneratedDatabase attachedDatabase;
@@ -385,7 +386,7 @@ class $SyncOutboxTable extends i2.SyncOutbox
     false,
     type: i0.DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const i3.Constant(0),
+    defaultValue: const i4.Constant(0),
   );
   static const i0.VerificationMeta _baseUpdatedAtMeta =
       const i0.VerificationMeta('baseUpdatedAt');
@@ -556,208 +557,6 @@ class $SyncOutboxTable extends i2.SyncOutbox
   }
 }
 
-class SyncOutboxData extends i0.DataClass
-    implements i0.Insertable<i1.SyncOutboxData> {
-  /// Уникальный идентификатор операции.
-  final String opId;
-
-  /// Тип сущности (например, 'daily_feeling').
-  final String kind;
-
-  /// ID сущности.
-  final String entityId;
-
-  /// Тип операции: 'upsert' или 'delete'.
-  final String op;
-
-  /// JSON payload для upsert операций.
-  final String? payload;
-
-  /// Timestamp операции (milliseconds UTC).
-  final int ts;
-
-  /// Количество попыток отправки.
-  final int tryCount;
-
-  /// Timestamp когда данные были получены с сервера (milliseconds UTC).
-  final int? baseUpdatedAt;
-
-  /// JSON array с именами изменённых полей.
-  final String? changedFields;
-  const SyncOutboxData({
-    required this.opId,
-    required this.kind,
-    required this.entityId,
-    required this.op,
-    this.payload,
-    required this.ts,
-    required this.tryCount,
-    this.baseUpdatedAt,
-    this.changedFields,
-  });
-  @override
-  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
-    final map = <String, i0.Expression>{};
-    map['op_id'] = i0.Variable<String>(opId);
-    map['kind'] = i0.Variable<String>(kind);
-    map['entity_id'] = i0.Variable<String>(entityId);
-    map['op'] = i0.Variable<String>(op);
-    if (!nullToAbsent || payload != null) {
-      map['payload'] = i0.Variable<String>(payload);
-    }
-    map['ts'] = i0.Variable<int>(ts);
-    map['try_count'] = i0.Variable<int>(tryCount);
-    if (!nullToAbsent || baseUpdatedAt != null) {
-      map['base_updated_at'] = i0.Variable<int>(baseUpdatedAt);
-    }
-    if (!nullToAbsent || changedFields != null) {
-      map['changed_fields'] = i0.Variable<String>(changedFields);
-    }
-    return map;
-  }
-
-  i1.SyncOutboxCompanion toCompanion(bool nullToAbsent) {
-    return i1.SyncOutboxCompanion(
-      opId: i0.Value(opId),
-      kind: i0.Value(kind),
-      entityId: i0.Value(entityId),
-      op: i0.Value(op),
-      payload:
-          payload == null && nullToAbsent
-              ? const i0.Value.absent()
-              : i0.Value(payload),
-      ts: i0.Value(ts),
-      tryCount: i0.Value(tryCount),
-      baseUpdatedAt:
-          baseUpdatedAt == null && nullToAbsent
-              ? const i0.Value.absent()
-              : i0.Value(baseUpdatedAt),
-      changedFields:
-          changedFields == null && nullToAbsent
-              ? const i0.Value.absent()
-              : i0.Value(changedFields),
-    );
-  }
-
-  factory SyncOutboxData.fromJson(
-    Map<String, dynamic> json, {
-    i0.ValueSerializer? serializer,
-  }) {
-    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
-    return SyncOutboxData(
-      opId: serializer.fromJson<String>(json['opId']),
-      kind: serializer.fromJson<String>(json['kind']),
-      entityId: serializer.fromJson<String>(json['entityId']),
-      op: serializer.fromJson<String>(json['op']),
-      payload: serializer.fromJson<String?>(json['payload']),
-      ts: serializer.fromJson<int>(json['ts']),
-      tryCount: serializer.fromJson<int>(json['tryCount']),
-      baseUpdatedAt: serializer.fromJson<int?>(json['baseUpdatedAt']),
-      changedFields: serializer.fromJson<String?>(json['changedFields']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
-    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'opId': serializer.toJson<String>(opId),
-      'kind': serializer.toJson<String>(kind),
-      'entityId': serializer.toJson<String>(entityId),
-      'op': serializer.toJson<String>(op),
-      'payload': serializer.toJson<String?>(payload),
-      'ts': serializer.toJson<int>(ts),
-      'tryCount': serializer.toJson<int>(tryCount),
-      'baseUpdatedAt': serializer.toJson<int?>(baseUpdatedAt),
-      'changedFields': serializer.toJson<String?>(changedFields),
-    };
-  }
-
-  i1.SyncOutboxData copyWith({
-    String? opId,
-    String? kind,
-    String? entityId,
-    String? op,
-    i0.Value<String?> payload = const i0.Value.absent(),
-    int? ts,
-    int? tryCount,
-    i0.Value<int?> baseUpdatedAt = const i0.Value.absent(),
-    i0.Value<String?> changedFields = const i0.Value.absent(),
-  }) => i1.SyncOutboxData(
-    opId: opId ?? this.opId,
-    kind: kind ?? this.kind,
-    entityId: entityId ?? this.entityId,
-    op: op ?? this.op,
-    payload: payload.present ? payload.value : this.payload,
-    ts: ts ?? this.ts,
-    tryCount: tryCount ?? this.tryCount,
-    baseUpdatedAt:
-        baseUpdatedAt.present ? baseUpdatedAt.value : this.baseUpdatedAt,
-    changedFields:
-        changedFields.present ? changedFields.value : this.changedFields,
-  );
-  SyncOutboxData copyWithCompanion(i1.SyncOutboxCompanion data) {
-    return SyncOutboxData(
-      opId: data.opId.present ? data.opId.value : this.opId,
-      kind: data.kind.present ? data.kind.value : this.kind,
-      entityId: data.entityId.present ? data.entityId.value : this.entityId,
-      op: data.op.present ? data.op.value : this.op,
-      payload: data.payload.present ? data.payload.value : this.payload,
-      ts: data.ts.present ? data.ts.value : this.ts,
-      tryCount: data.tryCount.present ? data.tryCount.value : this.tryCount,
-      baseUpdatedAt:
-          data.baseUpdatedAt.present
-              ? data.baseUpdatedAt.value
-              : this.baseUpdatedAt,
-      changedFields:
-          data.changedFields.present
-              ? data.changedFields.value
-              : this.changedFields,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncOutboxData(')
-          ..write('opId: $opId, ')
-          ..write('kind: $kind, ')
-          ..write('entityId: $entityId, ')
-          ..write('op: $op, ')
-          ..write('payload: $payload, ')
-          ..write('ts: $ts, ')
-          ..write('tryCount: $tryCount, ')
-          ..write('baseUpdatedAt: $baseUpdatedAt, ')
-          ..write('changedFields: $changedFields')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    opId,
-    kind,
-    entityId,
-    op,
-    payload,
-    ts,
-    tryCount,
-    baseUpdatedAt,
-    changedFields,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is i1.SyncOutboxData &&
-          other.opId == this.opId &&
-          other.kind == this.kind &&
-          other.entityId == this.entityId &&
-          other.op == this.op &&
-          other.payload == this.payload &&
-          other.ts == this.ts &&
-          other.tryCount == this.tryCount &&
-          other.baseUpdatedAt == this.baseUpdatedAt &&
-          other.changedFields == this.changedFields);
-}
-
 class SyncOutboxCompanion extends i0.UpdateCompanion<i1.SyncOutboxData> {
   final i0.Value<String> opId;
   final i0.Value<String> kind;
@@ -823,7 +622,7 @@ class SyncOutboxCompanion extends i0.UpdateCompanion<i1.SyncOutboxData> {
     });
   }
 
-  i1.SyncOutboxCompanion copyWith({
+  i2.SyncOutboxCompanion copyWith({
     i0.Value<String>? opId,
     i0.Value<String>? kind,
     i0.Value<String>? entityId,
@@ -835,7 +634,7 @@ class SyncOutboxCompanion extends i0.UpdateCompanion<i1.SyncOutboxData> {
     i0.Value<String?>? changedFields,
     i0.Value<int>? rowid,
   }) {
-    return i1.SyncOutboxCompanion(
+    return i2.SyncOutboxCompanion(
       opId: opId ?? this.opId,
       kind: kind ?? this.kind,
       entityId: entityId ?? this.entityId,
