@@ -9,16 +9,16 @@ import 'package:offline_first_sync_drift/offline_first_sync_drift.dart';
 import 'package:offline_first_sync_drift_rest/offline_first_sync_drift_rest.dart';
 
 Future<void> main() async {
-  // Открываем базу данных
+  // Open the database
   final db = await AppDatabase.open(filename: 'example.db');
 
-  // Создаём REST транспорт
+  // Create REST transport
   final transport = RestTransport(
     base: Uri.parse('https://api.example.com'),
     token: () async => 'Bearer your-token-here',
   );
 
-  // Регистрируем синхронизируемые таблицы
+  // Register syncable tables
   final engine = SyncEngine(
     db: db,
     transport: transport,
@@ -40,7 +40,7 @@ Future<void> main() async {
     ],
   );
 
-  // Подписываемся на события синхронизации
+  // Subscribe to sync events
   final subscription = engine.events.listen((event) {
     switch (event) {
       case SyncStarted(phase: final phase):
@@ -70,10 +70,10 @@ Future<void> main() async {
     }
   });
 
-  // Демонстрация локальных операций
-  stdout.writeln('=== Демонстрация локальных операций ===');
+  // Local operations demo
+  stdout.writeln('=== Local operations demo ===');
 
-  // Добавляем запись
+  // Insert a record
   final feeling = DailyFeeling(
     id: 'test-feeling-1',
     updatedAt: DateTime.now().toUtc(),
@@ -83,9 +83,9 @@ Future<void> main() async {
   );
 
   await db.into(db.dailyFeelings).insert(feeling.toInsertable());
-  stdout.writeln('Добавлена запись: ${feeling.id}');
+  stdout.writeln('Record added: ${feeling.id}');
 
-  // Добавляем операцию в outbox для синхронизации
+  // Add operation to outbox for sync
   await db.enqueue(UpsertOp(
     opId: 'op-${DateTime.now().millisecondsSinceEpoch}',
     kind: 'daily_feeling',
@@ -93,29 +93,29 @@ Future<void> main() async {
     localTimestamp: DateTime.now().toUtc(),
     payloadJson: feeling.toJson(),
   ));
-  stdout.writeln('Операция добавлена в outbox');
+  stdout.writeln('Operation added to outbox');
 
-  // Читаем все записи
+  // Read all records
   final feelings = await db.select(db.dailyFeelings).get();
-  stdout.writeln('Всего записей: ${feelings.length}');
+  stdout.writeln('Total records: ${feelings.length}');
 
-  // Проверяем outbox
+  // Check outbox
   final ops = await db.takeOutbox();
-  stdout.writeln('Операций в outbox: ${ops.length}');
+  stdout.writeln('Operations in outbox: ${ops.length}');
 
-  // Очищаем outbox
+  // Clear outbox
   await db.ackOutbox(ops.map((o) => o.opId));
-  stdout.writeln('Outbox очищен');
+  stdout.writeln('Outbox cleared');
 
-  // Запускаем синхронизацию (закомментировано - нет реального сервера)
-  // stdout.writeln('=== Запуск синхронизации ===');
+  // Run sync (commented out — no real server)
+  // stdout.writeln('=== Start sync ===');
   // try {
   //   await engine.sync();
   // } catch (e) {
   //   stdout.writeln('Sync failed: $e');
   // }
 
-  // Очистка
+  // Cleanup
   await subscription.cancel();
   engine.dispose();
   await db.close();

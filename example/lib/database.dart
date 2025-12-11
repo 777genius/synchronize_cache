@@ -9,7 +9,7 @@ import 'package:offline_first_sync_drift/offline_first_sync_drift.dart';
 
 import 'package:example/database.drift.dart';
 
-/// База данных приложения с поддержкой синхронизации.
+/// Application database with sync support.
 @DriftDatabase(
   include: {'package:offline_first_sync_drift/src/sync_tables.drift'},
   tables: [HealthRecords, DailyFeelings],
@@ -19,7 +19,7 @@ class AppDatabase extends $AppDatabase with SyncDatabaseMixin {
 
   AppDatabase._(super.e);
 
-  /// Открыть базу данных в файле.
+  /// Open the database in a file.
   static Future<AppDatabase> open({String filename = 'app.db'}) async {
     final dir = Directory.current.path;
     final file = File(p.join(dir, filename));
@@ -27,7 +27,7 @@ class AppDatabase extends $AppDatabase with SyncDatabaseMixin {
     return AppDatabase._(executor);
   }
 
-  /// Создать in-memory базу данных (для тестов).
+  /// Create an in-memory database (for tests).
   static AppDatabase inMemory() => AppDatabase(NativeDatabase.memory());
 
   @override

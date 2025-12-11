@@ -4,7 +4,7 @@ import 'package:offline_first_sync_drift/offline_first_sync_drift.dart';
 
 part 'daily_feeling.g.dart';
 
-/// Модель ежедневного самочувствия.
+/// Daily feeling model.
 @JsonSerializable(fieldRename: FieldRename.snake)
 class DailyFeeling {
   DailyFeeling({
@@ -33,7 +33,7 @@ class DailyFeeling {
   Map<String, dynamic> toJson() => _$DailyFeelingToJson(this);
 }
 
-/// Таблица ежедневного самочувствия.
+/// Daily feelings table.
 @UseRowClass(DailyFeeling, generateInsertable: true)
 class DailyFeelings extends Table with SyncColumns {
   TextColumn get id => text()();

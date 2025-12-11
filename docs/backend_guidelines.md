@@ -1,78 +1,78 @@
-# Руководство по серверной части для `offline_first_sync_drift`
+# Backend Guidelines for `offline_first_sync_drift`
 
-## Содержание
+## Table of Contents
 
-- [Введение](#введение)
-- [Упрощённый сценарий](#упрощённый-сценарий)
-  - [REST-эндпоинты](#rest-эндпоинты)
-  - [Поля моделей](#поля-моделей)
-  - [POST: создание](#post-создание-записи)
-  - [PUT: обновление](#put-обновление-upsert)
-  - [DELETE: удаление](#delete-удаление)
-  - [GET по ID](#get-по-id)
-  - [Пагинация](#пагинация)
-  - [Чеклист](#чеклист-упрощённый-сценарий)
-- [Полный сценарий](#полный-сценарий-с-обработкой-конфликтов)
-  - [PUT с конфликтами](#put-обновление-с-проверкой-конфликтов)
-  - [DELETE с конфликтами](#delete-удаление-с-проверкой-конфликтов)
-  - [Формат 409 Conflict](#формат-ответа-при-конфликте-409)
-  - [Batch API](#batch-api-опционально)
-  - [Чеклист](#чеклист-полный-сценарий)
-- [Общие разделы](#общие-разделы)
-  - [Системные поля](#системные-поля)
-  - [Health endpoint](#health-endpoint-опционально)
-  - [ETag](#etag-опционально)
-  - [Rate Limiting](#rate-limiting-опционально)
+- [Introduction](#introduction)
+- [Simplified Flow](#simplified-flow)
+  - [REST Endpoints](#rest-endpoints)
+  - [Model Fields](#model-fields)
+  - [POST: create](#post-create)
+  - [PUT: upsert](#put-upsert)
+  - [DELETE](#delete)
+  - [GET by ID](#get-by-id)
+  - [Pagination](#pagination)
+  - [Checklist](#checklist-simplified-flow)
+- [Full Flow](#full-flow-with-conflict-handling)
+  - [PUT with conflicts](#put-with-conflict-check)
+  - [DELETE with conflicts](#delete-with-conflict-check)
+  - [409 Conflict response format](#409-conflict-response-format)
+  - [Batch API](#batch-api-optional)
+  - [Checklist](#checklist-full-flow)
+- [Shared Topics](#shared-topics)
+  - [System Fields](#system-fields)
+  - [Health Endpoint](#health-endpoint-optional)
+  - [ETag](#etag-optional)
+  - [Rate Limiting](#rate-limiting-optional)
 - [FAQ](#faq)
 
 ---
 
-## Введение
+## Introduction
 
-`offline_first_sync_drift` — клиентская библиотека для offline-first синхронизации. Этот документ описывает требования к REST API сервера.
+`offline_first_sync_drift` is a client library for offline-first synchronization. This document describes the requirements for the server REST API.
 
-### Два сценария использования
+### Two usage scenarios
 
-| Сценарий | Когда использовать | Сложность |
-|----------|-------------------|-----------|
-| **Упрощённый** | Один клиент, один аккаунт, бэкенд не модифицирует данные | Минимальная |
-| **Полный** | Несколько клиентов/устройств, бэкенд может добавлять данные | Требует обработки конфликтов |
+| Scenario | When to use | Complexity |
+|----------|-------------|------------|
+| **Simplified** | One client, one account, backend does not modify data | Minimal |
+| **Full** | Multiple clients/devices, backend may add/modify data | Requires conflict handling |
 
-> Начните с упрощённого сценария. Если понадобится поддержка нескольких клиентов — добавьте обработку конфликтов.
+> Start with the simplified flow. Add conflict handling only if you need multiple clients or server-side writers.
 
 ---
 
-# Упрощённый сценарий
+# Simplified Flow
 
-**Используйте этот вариант если:**
-- Одно приложение, один аккаунт
-- Одно устройство (или устройства не работают одновременно)
-- Бэкенд только хранит данные, не модифицирует их самостоятельно
+**Use this flow if:**
+- Single app/account
+- Single device (or devices do not work concurrently)
+- Backend only stores data and never mutates it on its own
 
-В этом сценарии **конфликты невозможны**, поэтому проверка `_baseUpdatedAt` не нужна.
+In this flow **conflicts cannot happen**, so `_baseUpdatedAt` checks are not needed.
 
-## REST-эндпоинты
+## REST Endpoints
 
-| Метод | URL | Назначение |
-|-------|-----|------------|
-| `GET` | `/{kind}` | Список записей с фильтрацией и пагинацией |
-| `GET` | `/{kind}/{id}` | Получение одной записи |
-| `POST` | `/{kind}` | Создание новой записи |
-| `PUT` | `/{kind}/{id}` | Обновление записи (upsert) |
-| `DELETE` | `/{kind}/{id}` | Удаление записи |
+| Method | URL | Purpose |
+|--------|-----|---------|
+| `GET` | `/{kind}` | List records with filtering and pagination |
+| `GET` | `/{kind}/{id}` | Get a single record |
+| `POST` | `/{kind}` | Create a new record |
+| `PUT` | `/{kind}/{id}` | Update record (upsert) |
+| `DELETE` | `/{kind}/{id}` | Delete record |
 
-`{kind}` — имя сущности. Можно реализовать как:
-- Отдельные контроллеры: `/daily_feeling`, `/health_record`
-- Или динамический параметр с whitelist разрешённых сущностей
+`{kind}` is the entity name. You can implement it as:
+- Separate controllers: `/daily_feeling`, `/health_record`
+- Or a dynamic parameter with a whitelist of allowed entities
 
-## Поля моделей
+## Model Fields
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `id` | `string` | Уникальный идентификатор (UUID), **генерируется клиентом** |
-| `updated_at` | `datetime` | Время последнего обновления (UTC), **задаётся сервером** |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier (UUID), **generated by the client** |
+| `updated_at` | `datetime` | Last update time (UTC), **set by the server** |
 
-> Клиент поддерживает `snake_case` (`updated_at`) и `camelCase` (`updatedAt`).
+> The client supports both `snake_case` (`updated_at`) and `camelCase` (`updatedAt`).
 
 ```json
 {
@@ -83,20 +83,20 @@
 }
 ```
 
-## POST: создание записи
+## POST: create
 
-Клиент **обычно генерирует `id` сам** и использует PUT. POST используется редко (когда id пустой).
+The client **usually generates `id` itself** and uses PUT. POST is rarely used (when `id` is empty).
 
-Вернуть `201 Created` с созданной записью.
+Return `201 Created` with the created record.
 
 ```javascript
 async function handlePost(req, res) {
   const { kind } = req.params;
   
-  // id приходит от клиента или генерируем на сервере
+  // id comes from the client or is generated on the server
   const id = req.body.id || generateUUID();
   
-  // Удаляем системные поля из данных
+  // Remove system fields from payload
   const payload = stripSystemFields(req.body);
   const now = new Date().toISOString();
 
@@ -111,15 +111,15 @@ async function handlePost(req, res) {
 }
 ```
 
-## PUT: обновление (upsert)
+## PUT: upsert
 
-PUT работает как **upsert**: если записи нет — создаёт её.
+PUT acts as an **upsert**: if the record does not exist, it creates it.
 
-Клиент может передавать `_baseUpdatedAt` в теле — **просто игнорируйте его** в упрощённом сценарии.
+The client may send `_baseUpdatedAt` in the body — **ignore it** in the simplified flow.
 
 ```javascript
 async function handlePut(req, res) {
-  const { kind, id } = req.params;  // id из URL
+  const { kind, id } = req.params;  // id from URL
   const payload = stripSystemFields(req.body);
   const now = new Date().toISOString();
 
@@ -137,9 +137,9 @@ async function handlePut(req, res) {
 }
 ```
 
-## DELETE: удаление
+## DELETE
 
-Клиент может передавать `_baseUpdatedAt` как query-параметр — **просто игнорируйте его** в упрощённом сценарии.
+The client may send `_baseUpdatedAt` as a query parameter — **ignore it** in the simplified flow.
 
 ```javascript
 async function handleDelete(req, res) {
@@ -155,7 +155,7 @@ async function handleDelete(req, res) {
 }
 ```
 
-## GET по ID
+## GET by ID
 
 ```javascript
 async function handleGet(req, res) {
@@ -170,23 +170,23 @@ async function handleGet(req, res) {
 }
 ```
 
-## Пагинация
+## Pagination
 
-### Запрос
+### Request
 
 ```http
 GET /daily_feeling?updatedSince=2025-01-01T00:00:00Z&limit=500&includeDeleted=true
 ```
 
-| Параметр | Описание |
-|----------|----------|
-| `updatedSince` | Вернуть записи с `updated_at >= значение` |
-| `limit` | Максимум записей (рекомендуется 500) |
-| `pageToken` | Токен следующей страницы |
-| `afterId` | Клиент может передавать — можно игнорировать если используете `pageToken` |
-| `includeDeleted` | Включить soft-deleted записи (по умолчанию `true`) |
+| Parameter | Description |
+|-----------|-------------|
+| `updatedSince` | Return records with `updated_at >= value` |
+| `limit` | Max records (recommended 500) |
+| `pageToken` | Next page token |
+| `afterId` | Client may send it — can be ignored if you use `pageToken` |
+| `includeDeleted` | Include soft-deleted records (default `true`) |
 
-### Ответ
+### Response
 
 ```json
 {
@@ -198,9 +198,9 @@ GET /daily_feeling?updatedSince=2025-01-01T00:00:00Z&limit=500&includeDeleted=tr
 }
 ```
 
-`nextPageToken` — `null` если это последняя страница.
+`nextPageToken` is `null` on the last page.
 
-### Простая реализация с offset
+### Simple offset-based implementation
 
 ```javascript
 async function handleList(req, res) {
@@ -208,7 +208,7 @@ async function handleList(req, res) {
   const { updatedSince, pageToken } = req.query;
   const limit = parseInt(req.query.limit || '500', 10);
   const offset = parseInt(pageToken || '0', 10);
-  // includeDeleted — для hard-delete можно игнорировать
+  // includeDeleted — for hard-delete can be ignored
 
   let query = db(kind).orderBy('updated_at', 'asc').orderBy('id', 'asc');
   
@@ -223,47 +223,47 @@ async function handleList(req, res) {
 }
 ```
 
-## Чеклист (упрощённый сценарий)
+## Checklist (simplified flow)
 
-- [ ] У каждой модели есть `updated_at`, задаваемый сервером
-- [ ] `GET /{kind}` принимает `updatedSince`, `limit`, `pageToken`
-- [ ] Сортировка по `(updated_at, id)` для стабильной пагинации
-- [ ] Ответ `GET` возвращает `{ "items": [...], "nextPageToken": "..." }`
-- [ ] `POST` возвращает `201` с созданной записью
-- [ ] `PUT` работает как upsert
-- [ ] `DELETE` возвращает `204`
-- [ ] Все ответы `POST/PUT` включают `updated_at`
+- [ ] Every model has `updated_at` set by the server
+- [ ] `GET /{kind}` accepts `updatedSince`, `limit`, `pageToken`
+- [ ] Sort by `(updated_at, id)` for stable pagination
+- [ ] `GET` returns `{ "items": [...], "nextPageToken": "..." }`
+- [ ] `POST` returns `201` with the created record
+- [ ] `PUT` works as upsert
+- [ ] `DELETE` returns `204`
+- [ ] All `POST/PUT` responses include `updated_at`
 
 ---
 
-# Полный сценарий (с обработкой конфликтов)
+# Full Flow (with conflict handling)
 
-**Используйте этот вариант если:**
-- Несколько устройств могут работать одновременно
-- Бэкенд может модифицировать данные (webhooks, cron jobs, админка)
-- Нужна защита от потери данных при concurrent updates
+**Use this flow if:**
+- Multiple devices can work concurrently
+- Backend can mutate data (webhooks, cron jobs, admin tools)
+- You need protection from data loss on concurrent updates
 
-## Что добавляется к упрощённому варианту
+## What is added compared to the simplified flow
 
-| Фича | Описание |
-|------|----------|
-| Проверка `_baseUpdatedAt` | Детекция конфликтов |
-| `409 Conflict` ответ | Возврат актуального состояния при конфликте |
-| `X-Force-Update/Delete` | Принудительное обновление после merge |
-| `X-Idempotency-Key` | Защита от дублей при ретраях |
+| Feature | Description |
+|---------|-------------|
+| `_baseUpdatedAt` check | Conflict detection |
+| `409 Conflict` response | Returns current state on conflict |
+| `X-Force-Update/Delete` | Forced update after client-side merge |
+| `X-Idempotency-Key` | Protects against duplicates during retries |
 
-## PUT: обновление с проверкой конфликтов
+## PUT with conflict check
 
-### Заголовки запроса
+### Request headers
 
-| Заголовок | Описание |
-|-----------|----------|
-| `X-Idempotency-Key` | Уникальный ключ операции для безопасных ретраев |
-| `X-Force-Update: true` | Пропустить проверку конфликта (после merge на клиенте) |
+| Header | Description |
+|--------|-------------|
+| `X-Idempotency-Key` | Unique operation key for safe retries |
+| `X-Force-Update: true` | Skip conflict check (after client merge) |
 
-### Тело запроса
+### Request body
 
-Клиент присылает `_baseUpdatedAt` — timestamp записи на момент получения с сервера:
+The client sends `_baseUpdatedAt` — timestamp of the record when it was fetched:
 
 ```json
 {
@@ -273,17 +273,17 @@ async function handleList(req, res) {
 }
 ```
 
-### Алгоритм обработки
+### Processing algorithm
 
-1. Прочитать `X-Idempotency-Key`. Если операция уже выполнялась — вернуть сохранённый ответ.
-2. Найти запись. Если не существует — создать (upsert), вернуть `201`.
-3. Считать `_baseUpdatedAt` из тела.
-4. Если `X-Force-Update != true` и `existing.updated_at != baseUpdatedAt` — вернуть `409 Conflict`.
-5. Обновить запись, присвоив новый `updated_at`.
-6. Вернуть `200` с обновлённой записью.
-7. Закэшировать ответ по `X-Idempotency-Key` на 24 часа.
+1. Read `X-Idempotency-Key`. If the operation already ran — return cached response.
+2. Find the record. If it does not exist — create (upsert), return `201`.
+3. Read `_baseUpdatedAt` from the body.
+4. If `X-Force-Update != true` and `existing.updated_at != baseUpdatedAt` — return `409 Conflict`.
+5. Update the record and set new `updated_at`.
+6. Return `200` with the updated record.
+7. Cache the response by `X-Idempotency-Key` for 24 hours.
 
-### Пример
+### Example
 
 ```javascript
 async function handlePut(req, res) {
@@ -299,7 +299,7 @@ async function handlePut(req, res) {
   const existing = await db(kind).where({ id }).first();
   const forceUpdate = req.header('x-force-update') === 'true';
   
-  // Берём _baseUpdatedAt ДО удаления системных полей
+  // Read _baseUpdatedAt BEFORE removing system fields
   const baseUpdatedAt = req.body._baseUpdatedAt;
   const payload = stripSystemFields(req.body);
   const now = new Date().toISOString();
@@ -311,7 +311,7 @@ async function handlePut(req, res) {
     return res.status(201).json(result);
   }
 
-  // Проверка конфликта
+  // Conflict check
   if (!forceUpdate && baseUpdatedAt && existing.updated_at !== baseUpdatedAt) {
     return res.status(409).json({
       error: 'conflict',
@@ -330,25 +330,25 @@ async function handlePut(req, res) {
 }
 ```
 
-## DELETE: удаление с проверкой конфликтов
+## DELETE with conflict check
 
-`_baseUpdatedAt` передаётся как **query-параметр**.
+`_baseUpdatedAt` is passed as a **query parameter**.
 
-### Заголовки запроса
+### Request headers
 
-| Заголовок | Описание |
-|-----------|----------|
-| `X-Idempotency-Key` | Уникальный ключ операции |
-| `X-Force-Delete: true` | Пропустить проверку конфликта |
+| Header | Description |
+|--------|-------------|
+| `X-Idempotency-Key` | Unique operation key |
+| `X-Force-Delete: true` | Skip conflict check |
 
-### Пример запроса
+### Request example
 
 ```http
 DELETE /daily_feeling/abc-123?_baseUpdatedAt=2025-01-15T10:30:00Z
 X-Idempotency-Key: op-456
 ```
 
-### Пример
+### Example
 
 ```javascript
 async function handleDelete(req, res) {
@@ -368,7 +368,7 @@ async function handleDelete(req, res) {
   const forceDelete = req.header('x-force-delete') === 'true';
   const baseUpdatedAt = req.query._baseUpdatedAt;
 
-  // Проверка конфликта
+  // Conflict check
   if (!forceDelete && baseUpdatedAt && existing.updated_at !== baseUpdatedAt) {
     return res.status(409).json({
       error: 'conflict',
@@ -386,7 +386,7 @@ async function handleDelete(req, res) {
 }
 ```
 
-## Формат ответа при конфликте (409)
+## 409 Conflict response format
 
 ```json
 {
@@ -400,18 +400,18 @@ async function handleDelete(req, res) {
 }
 ```
 
-| Поле | Описание |
-|------|----------|
-| `error` | Код ошибки (`"conflict"`) |
-| `current` | Актуальное состояние записи (должен содержать `updated_at`) |
+| Field | Description |
+|-------|-------------|
+| `error` | Error code (`"conflict"`) |
+| `current` | Current record state (must include `updated_at`) |
 
-Клиент использует `current` для merge и повторяет запрос с `X-Force-Update: true` (или `X-Force-Delete: true`).
+The client uses `current` to merge and repeats the request with `X-Force-Update: true` (or `X-Force-Delete: true`).
 
-## Batch API (опционально)
+## Batch API (optional)
 
-Для оптимизации можно реализовать пакетную обработку.
+Batch processing can improve performance.
 
-### Запрос
+### Request
 
 ```http
 POST /batch
@@ -438,7 +438,7 @@ Content-Type: application/json
 }
 ```
 
-### Ответ
+### Response
 
 ```json
 {
@@ -460,30 +460,30 @@ Content-Type: application/json
 }
 ```
 
-## Чеклист (полный сценарий)
+## Checklist (full flow)
 
-Всё из упрощённого сценария, плюс:
+Everything from the simplified flow, plus:
 
-- [ ] `PUT` проверяет `_baseUpdatedAt`, возвращает `409` с `current` при конфликте
-- [ ] `DELETE` проверяет `_baseUpdatedAt` (query-параметр)
-- [ ] Поддерживаются заголовки `X-Force-Update`, `X-Force-Delete`
-- [ ] Поддерживается `X-Idempotency-Key` (24ч cache)
+- [ ] `PUT` checks `_baseUpdatedAt`, returns `409` with `current` on conflict
+- [ ] `DELETE` checks `_baseUpdatedAt` (query parameter)
+- [ ] Supports headers `X-Force-Update`, `X-Force-Delete`
+- [ ] Supports `X-Idempotency-Key` (24h cache)
 
-### Опционально
+### Optional
 
-- [ ] `POST /batch` для пакетной обработки
-- [ ] Сервер возвращает заголовок `ETag`
-- [ ] Поддержка `deleted_at` для soft-delete
+- [ ] `POST /batch` for batch processing
+- [ ] Server returns `ETag` header
+- [ ] Support `deleted_at` for soft delete
 
 ---
 
-# Общие разделы
+# Shared Topics
 
-## Системные поля
+## System Fields
 
-При сохранении данных удаляйте системные поля из payload — они управляются сервером.
+Remove system fields from the payload when saving — they are controlled by the server.
 
-> **Важно:** Извлекайте нужные значения (например, `_baseUpdatedAt`) **до** вызова `stripSystemFields`.
+> **Important:** Extract required values (for example `_baseUpdatedAt`) **before** calling `stripSystemFields`.
 
 ```javascript
 const SYSTEM_FIELDS = [
@@ -502,14 +502,14 @@ function stripSystemFields(payload) {
   return result;
 }
 
-// Пример использования:
-const baseUpdatedAt = req.body._baseUpdatedAt;  // сначала извлекаем
-const payload = stripSystemFields(req.body);     // потом очищаем
+// Usage example:
+const baseUpdatedAt = req.body._baseUpdatedAt;  // extract first
+const payload = stripSystemFields(req.body);    // then clean
 ```
 
-## Health endpoint (опционально)
+## Health Endpoint (optional)
 
-Клиент может вызывать `GET /health` для проверки доступности сервера.
+The client can call `GET /health` to check server availability.
 
 ```javascript
 app.get('/health', (req, res) => {
@@ -517,11 +517,11 @@ app.get('/health', (req, res) => {
 });
 ```
 
-Верните `2xx` статус если сервер работает. Содержимое ответа не важно.
+Return any `2xx` status if the server is healthy. The response body is not important.
 
-## ETag (опционально)
+## ETag (optional)
 
-Сервер может возвращать заголовок `ETag`:
+The server may return an `ETag` header:
 
 ```http
 HTTP/1.1 200 OK
@@ -531,32 +531,32 @@ Content-Type: application/json
 {"id": "abc-123", "mood": 7, ...}
 ```
 
-## Rate Limiting (опционально)
+## Rate Limiting (optional)
 
-При превышении лимита:
+On limit exceed:
 
 ```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 60
 ```
 
-Клиент автоматически ретраит через указанное количество секунд.
+The client will automatically retry after the specified number of seconds.
 
 ---
 
 # FAQ
 
-## Что такое `{kind}` в URL?
+## What is `{kind}` in the URL?
 
-Это имя сущности/таблицы. Реализуйте как удобнее:
+It is the entity/table name. Implement it however is convenient:
 
-**Вариант 1:** Отдельные роуты
+**Option 1:** Separate routes
 ```javascript
 router.get('/daily_feeling', handleList);
 router.get('/health_record', handleList);
 ```
 
-**Вариант 2:** Динамический параметр с whitelist
+**Option 2:** Dynamic parameter with whitelist
 ```javascript
 const ALLOWED_KINDS = ['daily_feeling', 'health_record'];
 
@@ -568,111 +568,111 @@ router.get('/:kind', (req, res) => {
 });
 ```
 
-## Откуда клиент берёт `_baseUpdatedAt`?
+## Where does the client take `_baseUpdatedAt` from?
 
-Когда клиент получает запись с сервера (через GET), он сохраняет `updated_at`. При следующем обновлении этой записи клиент отправляет сохранённый timestamp как `_baseUpdatedAt`.
+When the client fetches a record (via GET) it stores `updated_at`. On the next update of this record the client sends the stored timestamp as `_baseUpdatedAt`.
 
-Это позволяет серверу понять: "клиент редактировал версию от 10:30, а на сервере уже версия от 11:00 — конфликт!"
+This lets the server understand: “the client edited version from 10:30, but the server already has version from 11:00 — conflict!”
 
-## Почему проверка `!=` а не `>`?
+## Why check `!=` instead of `>`?
 
-Используем **строгое равенство** (`!=`), а не "сервер новее" (`>`), потому что:
+We use **strict equality** (`!=`), not “server is newer” (`>`), because:
 
-1. Любое изменение на сервере (даже более старое) означает что клиент работал с устаревшими данными
-2. Это проще реализовать — не нужно парсить даты, достаточно сравнить строки
-3. Защищает от edge cases с синхронизацией времени между серверами
+1. Any change on the server (even with an older timestamp) means the client worked with stale data
+2. Implementation is simpler — no date parsing, string compare is enough
+3. Protects from edge cases with clock sync between servers
 
-## Что если `_baseUpdatedAt` не передан?
+## What if `_baseUpdatedAt` is missing?
 
-- **Новая запись** (PUT на несуществующий id): `_baseUpdatedAt` не нужен, это upsert
-- **Существующая запись без `_baseUpdatedAt`**: считайте что клиент знает что делает — пропустите проверку конфликта (как при `X-Force-Update`)
+- **New record** (PUT to a missing id): `_baseUpdatedAt` is not needed, it is an upsert
+- **Existing record without `_baseUpdatedAt`**: assume the client knows what it is doing — skip conflict check (same as `X-Force-Update`)
 
 ```javascript
 if (!forceUpdate && baseUpdatedAt && existing.updated_at !== baseUpdatedAt) {
-  // Конфликт только если baseUpdatedAt передан И не совпадает
+  // Conflict only if baseUpdatedAt is provided AND does not match
 }
 ```
 
-## Какой формат datetime использовать?
+## What datetime format to use?
 
-**ISO 8601 в UTC с суффиксом `Z`:**
+**ISO 8601 in UTC with `Z` suffix:**
 
 ```
 2025-01-15T10:30:00Z
 ```
 
-Клиент парсит и другие форматы (`+00:00`, миллисекунды), но `Z` — самый надёжный.
+The client also parses other formats (`+00:00`, milliseconds), but `Z` is the most robust.
 
-## Зачем `includeDeleted=true` по умолчанию?
+## Why `includeDeleted=true` by default?
 
-Для синхронизации клиенту нужно знать какие записи были удалены (soft-delete), чтобы удалить их локально.
+For sync the client needs to know which records were deleted (soft-delete) to delete them locally.
 
-Если используете **hard-delete** — этот параметр можно игнорировать.
+If you use **hard-delete** — you can ignore this parameter.
 
-## Soft-delete vs hard-delete?
+## Soft delete vs hard delete?
 
-**Hard-delete** (упрощённый сценарий):
-- Запись удаляется из БД
-- Клиент не узнает об удалении до full resync
-- Проще реализовать
+**Hard delete** (simplified flow):
+- Record is removed from DB
+- Client will not know about deletion until a full resync
+- Easier to implement
 
-**Soft-delete** (полный сценарий):
-- Устанавливается `deleted_at`, запись остаётся в БД
-- Клиент получает удалённые записи через `includeDeleted=true`
-- Нужно для sync между устройствами
+**Soft delete** (full flow):
+- `deleted_at` is set, record stays in DB
+- Client receives deleted records via `includeDeleted=true`
+- Needed for sync between devices
 
-## Что хранить в idempotency cache?
+## What to store in the idempotency cache?
 
-Храните **полный response** (JSON body):
+Store the **entire response** (JSON body):
 
 ```javascript
-// При успешном запросе
+// On success
 await cache.set(`idempotency:${key}`, result, 86400);
 
-// При повторном запросе
+// On retry
 const cached = await cache.get(`idempotency:${key}`);
 if (cached) return res.json(cached);
 ```
 
-Для DELETE можно хранить `{ deleted: true }` или просто факт выполнения.
+For DELETE you can store `{ deleted: true }` or just the fact the operation succeeded.
 
-## Как передавать авторизацию?
+## How to pass authorization?
 
-Документ не диктует способ авторизации. Используйте стандартный для вашего API:
+The document does not dictate auth. Use your standard API approach:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-Клиентская библиотека передаёт значение хедера через callback:
+The client library forwards the header value via callback:
 ```dart
 RestTransport(
-  // Возвращает полное значение для Authorization header
+  // Returns the full Authorization header value
   token: () async => 'Bearer ${await getToken()}',
 )
 ```
 
-## Что такое "merge на клиенте"?
+## What is “client-side merge”?
 
-Когда сервер возвращает `409 Conflict`, клиент:
+When the server returns `409 Conflict`, the client:
 
-1. Получает `current` (актуальное состояние с сервера)
-2. Сравнивает с локальными изменениями
-3. Объединяет данные (merge) по настроенной стратегии
-4. Повторяет запрос с `X-Force-Update: true`
+1. Receives `current` (the latest server state)
+2. Compares it with local changes
+3. Merges data according to configured strategy
+4. Repeats the request with `X-Force-Update: true`
 
-Стратегии merge настраиваются в клиентской библиотеке (serverWins, clientWins, lastWriteWins, custom).
+Merge strategies are configured in the client library (`serverWins`, `clientWins`, `lastWriteWins`, `custom`).
 
-## Кто генерирует `id`?
+## Who generates `id`?
 
-**Клиент генерирует UUID** перед отправкой. Это позволяет:
-- Работать offline
-- Создавать записи без round-trip к серверу
+**The client generates UUID** before sending. This allows:
+- Working offline
+- Creating records without a round-trip to the server
 
-Сервер генерирует `id` только если клиент не передал его (редкий случай при POST).
+The server generates `id` only if the client did not provide one (rare case for POST).
 
 ---
 
-## Дополнительные материалы
+## Additional materials
 
-E2E-тесты в [`packages/offline_first_sync_drift_rest/test/e2e`](../packages/offline_first_sync_drift_rest/test/e2e) — референсная реализация сервера.
+E2E tests in [`packages/offline_first_sync_drift_rest/test/e2e`](../packages/offline_first_sync_drift_rest/test/e2e) show a reference server implementation.

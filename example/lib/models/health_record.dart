@@ -4,7 +4,7 @@ import 'package:offline_first_sync_drift/offline_first_sync_drift.dart';
 
 part 'health_record.g.dart';
 
-/// Модель записи о здоровье.
+/// Health record model.
 @JsonSerializable(fieldRename: FieldRename.snake)
 class HealthRecord {
   HealthRecord({
@@ -29,7 +29,7 @@ class HealthRecord {
   Map<String, dynamic> toJson() => _$HealthRecordToJson(this);
 }
 
-/// Таблица записей о здоровье.
+/// Health records table.
 @UseRowClass(HealthRecord, generateInsertable: true)
 class HealthRecords extends Table with SyncColumns {
   TextColumn get id => text()();
